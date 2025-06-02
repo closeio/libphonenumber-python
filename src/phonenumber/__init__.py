@@ -4,21 +4,40 @@ Python bindings for Google's libphonenumber library.
 
 __version__ = "0.1.0"
 
+# Exceptions
+class NumberParseException(Exception):
+    """Exception when parsing a phone number."""
+    def __init__(self, error_type, msg=""):
+        super().__init__(msg)
+        self.error_type = error_type
+        self.message = msg
+
+class NumberParseExceptionType:
+    """Enumeration of parsing error types."""
+    INVALID_COUNTRY_CODE = 0
+    NOT_A_NUMBER = 1
+    TOO_SHORT_AFTER_IDD = 2
+    TOO_SHORT_NSN = 3
+    TOO_LONG = 4
+
 # The real implementation would use the Cython module
 # This is just a stub for demonstration
 class PhoneNumber:
     """
     Python representation of a phone number.
     """
-    def __init__(self, country_code=None, national_number=None, extension=None):
+    def __init__(self, country_code=None, national_number=None, extension=None, 
+                 italian_leading_zero=False, number_of_leading_zeros=0, 
+                 raw_input=None, country_code_source=0, 
+                 preferred_domestic_carrier_code=None):
         self._country_code = country_code
         self._national_number = national_number
         self._extension = extension
-        self._italian_leading_zero = False
-        self._number_of_leading_zeros = 0
-        self._raw_input = None
-        self._country_code_source = 0
-        self._preferred_domestic_carrier_code = None
+        self._italian_leading_zero = italian_leading_zero
+        self._number_of_leading_zeros = number_of_leading_zeros
+        self._raw_input = raw_input
+        self._country_code_source = country_code_source
+        self._preferred_domestic_carrier_code = preferred_domestic_carrier_code
 
     @property
     def country_code(self):
@@ -91,6 +110,43 @@ class PhoneNumber:
     @preferred_domestic_carrier_code.setter
     def preferred_domestic_carrier_code(self, value):
         self._preferred_domestic_carrier_code = value
+    
+    def __eq__(self, other):
+        if not isinstance(other, PhoneNumber):
+            return False
+        return (self.country_code == other.country_code and
+                self.national_number == other.national_number and
+                self.extension == other.extension and
+                self.italian_leading_zero == other.italian_leading_zero and
+                self.number_of_leading_zeros == other.number_of_leading_zeros and
+                self.raw_input == other.raw_input and
+                self.country_code_source == other.country_code_source and
+                self.preferred_domestic_carrier_code == other.preferred_domestic_carrier_code)
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    def clear(self):
+        """Clear all data."""
+        self._country_code = None
+        self._national_number = None
+        self._extension = None
+        self._italian_leading_zero = False
+        self._number_of_leading_zeros = 0
+        self._raw_input = None
+        self._country_code_source = 0
+        self._preferred_domestic_carrier_code = None
+    
+    def merge_from(self, other):
+        """Merge data from another PhoneNumber."""
+        self.country_code = other.country_code
+        self.national_number = other.national_number
+        self.extension = other.extension
+        self.italian_leading_zero = other.italian_leading_zero
+        self.number_of_leading_zeros = other.number_of_leading_zeros
+        self.raw_input = other.raw_input
+        self.country_code_source = other.country_code_source
+        self.preferred_domestic_carrier_code = other.preferred_domestic_carrier_code
     
     def __str__(self):
         if self.country_code is None or self.national_number is None:
@@ -207,6 +263,40 @@ class PhoneNumberUtil:
         # Mock implementation
         return self.get_example_number(region_code)
 
+
+# Immutable version of PhoneNumber for use in dictionaries/sets
+class FrozenPhoneNumber(PhoneNumber):
+    """
+    An immutable version of PhoneNumber that can be used as a dictionary key.
+    """
+    def __init__(self, *args, **kwargs):
+        self._mutable = True
+        if len(args) == 1 and isinstance(args[0], PhoneNumber):
+            # Copy from another PhoneNumber
+            super().__init__()
+            self.merge_from(args[0])
+        else:
+            # Normal initialization
+            super().__init__(*args, **kwargs)
+        self._mutable = False
+        
+    def __setattr__(self, name, value):
+        if getattr(self, '_mutable', True) or name == '_mutable':
+            super().__setattr__(name, value)
+        else:
+            raise TypeError("Cannot modify a FrozenPhoneNumber")
+            
+    def __delattr__(self, name):
+        if getattr(self, '_mutable', True):
+            super().__delattr__(name)
+        else:
+            raise TypeError("Cannot modify a FrozenPhoneNumber")
+    
+    def __hash__(self):
+        return hash((self.country_code, self.national_number, 
+                     self.extension, self.italian_leading_zero,
+                     self.number_of_leading_zeros, self.raw_input,
+                     self.country_code_source, self.preferred_domestic_carrier_code))
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()

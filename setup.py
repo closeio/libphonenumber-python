@@ -7,7 +7,7 @@ setup(
     description="Python bindings for Google's libphonenumber library",
     author="Alec",
     author_email="example@example.com",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=["phonenumber"],
+    package_dir={"phonenumber": "src/phonenumber"},
     python_requires=">=3.10",
 )
