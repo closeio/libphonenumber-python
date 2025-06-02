@@ -7,12 +7,16 @@ Python bindings for Google's libphonenumber library.
 
 from libcpp cimport bool
 from libcpp.string cimport string
-from cython.operator cimport dereference as deref
+from libcpp.vector cimport vector
+from libcpp.set cimport set as cppset
+from cython.operator cimport dereference as deref, postincrement as postinc
 
 # Use a relative import path
 from .phonenumber_defs cimport (
     PhoneNumber as CppPhoneNumber,
     PhoneNumberUtil as CppPhoneNumberUtil,
+    PhoneNumberDesc as CppPhoneNumberDesc,
+    NumberFormat as CppNumberFormat,
     CppPhoneNumberFormat,
     CppPhoneNumberType,
     CppCountryCodeSource,
@@ -151,6 +155,278 @@ cdef class PhoneNumber:
     
     def __repr__(self):
         return f"PhoneNumber(country_code={self.country_code}, national_number={self.national_number})"
+
+# NumberFormat class
+cdef class NumberFormat:
+    """
+    Python representation of a number formatting rule.
+    """
+    cdef CppNumberFormat* _number_format
+    
+    def __cinit__(self):
+        self._number_format = new CppNumberFormat()
+    
+    def __dealloc__(self):
+        del self._number_format
+    
+    @property
+    def pattern(self):
+        """Regex pattern for matching phone numbers."""
+        if not self._number_format.has_pattern():
+            return None
+        return self._number_format.pattern().decode('utf-8')
+    
+    @pattern.setter
+    def pattern(self, value):
+        if value is not None:
+            self._number_format.set_pattern(value.encode('utf-8'))
+    
+    @property
+    def format(self):
+        """Format string for formatting matched numbers."""
+        if not self._number_format.has_format():
+            return None
+        return self._number_format.format().decode('utf-8')
+    
+    @format.setter
+    def format(self, value):
+        if value is not None:
+            self._number_format.set_format(value.encode('utf-8'))
+    
+    @property
+    def leading_digits_patterns(self):
+        """List of leading digit patterns."""
+        patterns = []
+        cdef int size = self._number_format.leading_digits_pattern_size()
+        for i in range(size):
+            patterns.append(self._number_format.leading_digits_pattern(i).decode('utf-8'))
+        return patterns
+    
+    def add_leading_digits_pattern(self, pattern):
+        """Add a leading digits pattern."""
+        self._number_format.add_leading_digits_pattern(pattern.encode('utf-8'))
+    
+    @property
+    def national_prefix_formatting_rule(self):
+        """National prefix formatting rule."""
+        if not self._number_format.has_national_prefix_formatting_rule():
+            return None
+        return self._number_format.national_prefix_formatting_rule().decode('utf-8')
+    
+    @national_prefix_formatting_rule.setter
+    def national_prefix_formatting_rule(self, value):
+        if value is not None:
+            self._number_format.set_national_prefix_formatting_rule(value.encode('utf-8'))
+    
+    @property
+    def domestic_carrier_code_formatting_rule(self):
+        """Domestic carrier code formatting rule."""
+        if not self._number_format.has_domestic_carrier_code_formatting_rule():
+            return None
+        return self._number_format.domestic_carrier_code_formatting_rule().decode('utf-8')
+    
+    @domestic_carrier_code_formatting_rule.setter
+    def domestic_carrier_code_formatting_rule(self, value):
+        if value is not None:
+            self._number_format.set_domestic_carrier_code_formatting_rule(value.encode('utf-8'))
+    
+    @property
+    def national_prefix_optional_when_formatting(self):
+        """Whether national prefix is optional when formatting."""
+        if not self._number_format.has_national_prefix_optional_when_formatting():
+            return False
+        return self._number_format.national_prefix_optional_when_formatting()
+    
+    @national_prefix_optional_when_formatting.setter
+    def national_prefix_optional_when_formatting(self, value):
+        self._number_format.set_national_prefix_optional_when_formatting(value)
+    
+    def __str__(self):
+        return f"NumberFormat(pattern='{self.pattern}', format='{self.format}')"
+    
+    def __repr__(self):
+        return self.__str__()
+
+# PhoneNumberDesc class
+cdef class PhoneNumberDesc:
+    """
+    Python representation of a phone number description for a specific type.
+    """
+    cdef CppPhoneNumberDesc* _phone_number_desc
+    
+    def __cinit__(self):
+        self._phone_number_desc = new CppPhoneNumberDesc()
+    
+    def __dealloc__(self):
+        del self._phone_number_desc
+    
+    @property
+    def national_number_pattern(self):
+        """Regex pattern for valid national numbers."""
+        if not self._phone_number_desc.has_national_number_pattern():
+            return None
+        return self._phone_number_desc.national_number_pattern().decode('utf-8')
+    
+    @national_number_pattern.setter
+    def national_number_pattern(self, value):
+        if value is not None:
+            self._phone_number_desc.set_national_number_pattern(value.encode('utf-8'))
+    
+    @property
+    def example_number(self):
+        """Example number for this type."""
+        if not self._phone_number_desc.has_example_number():
+            return None
+        return self._phone_number_desc.example_number().decode('utf-8')
+    
+    @example_number.setter
+    def example_number(self, value):
+        if value is not None:
+            self._phone_number_desc.set_example_number(value.encode('utf-8'))
+    
+    @property
+    def possible_lengths(self):
+        """List of possible lengths for this number type."""
+        lengths = []
+        cdef int size = self._phone_number_desc.possible_length_size()
+        for i in range(size):
+            lengths.append(self._phone_number_desc.possible_length(i))
+        return lengths
+    
+    def add_possible_length(self, length):
+        """Add a possible length."""
+        self._phone_number_desc.add_possible_length(length)
+    
+    @property
+    def possible_lengths_local_only(self):
+        """List of possible lengths for local-only numbers."""
+        lengths = []
+        cdef int size = self._phone_number_desc.possible_length_local_only_size()
+        for i in range(size):
+            lengths.append(self._phone_number_desc.possible_length_local_only(i))
+        return lengths
+    
+    def add_possible_length_local_only(self, length):
+        """Add a possible length for local-only numbers."""
+        self._phone_number_desc.add_possible_length_local_only(length)
+    
+    def __str__(self):
+        return f"PhoneNumberDesc(pattern='{self.national_number_pattern}', example='{self.example_number}')"
+    
+    def __repr__(self):
+        return self.__str__()
+
+# PhoneMetadata class - aggregates public metadata information
+cdef class PhoneMetadata:
+    """
+    Python representation of phone metadata for a region.
+    This class aggregates information from various public APIs.
+    """
+    cdef readonly str _region_code
+    cdef readonly int _country_code
+    cdef readonly list _supported_types
+    cdef readonly object _example_numbers
+    
+    def __cinit__(self, region_code):
+        self._region_code = region_code
+        self._country_code = 0
+        self._supported_types = []
+        self._example_numbers = {}
+        
+        # Get country code from an example number
+        try:
+            example = get_example_number(region_code)
+            if example:
+                self._country_code = example.country_code
+        except:
+            pass
+        
+        # Get supported types
+        self._supported_types = get_supported_types_for_region(region_code)
+        
+        # Get example numbers for each type
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef PhoneNumber example_number
+        cdef bool success
+        for number_type in self._supported_types:
+            try:
+                example_number = PhoneNumber()
+                success = util.GetExampleNumberForType(
+                    region_code.encode('utf-8'),
+                    <CppPhoneNumberType>number_type,
+                    example_number._phone_number
+                )
+                if success:
+                    self._example_numbers[number_type] = example_number
+            except:
+                pass
+    
+    @property
+    def region_code(self):
+        """Region code identifier (e.g., 'US', 'GB')."""
+        return self._region_code
+    
+    @property
+    def country_code(self):
+        """Country calling code (e.g., 1 for US, 44 for UK)."""
+        return self._country_code
+    
+    @property
+    def supported_types(self):
+        """List of supported phone number types for this region."""
+        return self._supported_types[:]  # Return a copy
+    
+    def get_example_number(self, number_type=None):
+        """Get example number for the region or a specific type."""
+        if number_type is None:
+            # Return general example number
+            return get_example_number(self._region_code)
+        else:
+            # Return example for specific type
+            return self._example_numbers.get(number_type)
+    
+    def get_example_number_string(self, number_type=None, format_type=PhoneNumberFormat.NATIONAL):
+        """Get example number as formatted string."""
+        example = self.get_example_number(number_type)
+        if example:
+            return format_number(example, format_type)
+        return None
+    
+    def is_valid_number_for_region(self, phone_number):
+        """Check if a phone number is valid for this region."""
+        cdef PhoneNumber parsed_number
+        if isinstance(phone_number, str):
+            try:
+                parsed_number = parse(phone_number, self._region_code)
+            except:
+                return False
+        else:
+            parsed_number = phone_number
+        
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsValidNumberForRegion(
+            deref(parsed_number._phone_number),
+            self._region_code.encode('utf-8')
+        )
+    
+    def get_number_type(self, phone_number):
+        """Get the type of a phone number in this region."""
+        cdef PhoneNumber parsed_number
+        if isinstance(phone_number, str):
+            try:
+                parsed_number = parse(phone_number, self._region_code)
+            except:
+                return None
+        else:
+            parsed_number = phone_number
+        
+        return get_number_type(parsed_number)
+    
+    def __str__(self):
+        return f"PhoneMetadata(region='{self._region_code}', country_code={self._country_code})"
+    
+    def __repr__(self):
+        return self.__str__()
 
 # Immutable phone number class
 cdef class FrozenPhoneNumber:
@@ -423,6 +699,58 @@ cdef class PhoneNumberUtil:
         """Truncate a too-long number."""
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         return util.TruncateTooLongNumber(number._phone_number)
+    
+    def get_supported_regions(self):
+        """Get list of supported region codes."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef cppset[string] regions
+        util.GetSupportedRegions(&regions)
+        
+        py_regions = []
+        cdef cppset[string].iterator it = regions.begin()
+        while it != regions.end():
+            py_regions.append(deref(it).decode('utf-8'))
+            postinc(it)  # Use pre-increment operator
+        return py_regions
+    
+    def get_supported_global_network_calling_codes(self):
+        """Get list of supported global network calling codes."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef cppset[int] calling_codes
+        util.GetSupportedGlobalNetworkCallingCodes(&calling_codes)
+        
+        py_codes = []
+        cdef cppset[int].iterator it = calling_codes.begin()
+        while it != calling_codes.end():
+            py_codes.append(deref(it))
+            postinc(it)  # Use pre-increment operator
+        return py_codes
+    
+    def get_supported_calling_codes(self):
+        """Get list of all supported calling codes."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef cppset[int] calling_codes
+        util.GetSupportedCallingCodes(&calling_codes)
+        
+        py_codes = []
+        cdef cppset[int].iterator it = calling_codes.begin()
+        while it != calling_codes.end():
+            py_codes.append(deref(it))
+            postinc(it)  # Use pre-increment operator
+        return py_codes
+    
+    def get_supported_types_for_region(self, region_code):
+        """Get list of supported phone number types for a region."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef cppset[CppPhoneNumberType] types
+        util.GetSupportedTypesForRegion(region_code.encode('utf-8'), &types)
+        
+        py_types = []
+        cdef cppset[CppPhoneNumberType].iterator it = types.begin()
+        while it != types.end():
+            py_types.append(deref(it))
+            postinc(it)  # Use pre-increment operator
+        return py_types
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
@@ -480,3 +808,24 @@ def get_example_frozen_number(region_code):
     """Get an example frozen phone number for a region."""
     mutable_number = get_example_number(region_code)
     return FrozenPhoneNumber.from_phone_number(mutable_number)
+
+# Metadata convenience functions
+def get_supported_regions():
+    """Get list of supported region codes."""
+    return _phone_util.get_supported_regions()
+
+def get_supported_global_network_calling_codes():
+    """Get list of supported global network calling codes."""
+    return _phone_util.get_supported_global_network_calling_codes()
+
+def get_supported_calling_codes():
+    """Get list of all supported calling codes."""
+    return _phone_util.get_supported_calling_codes()
+
+def get_supported_types_for_region(region_code):
+    """Get list of supported phone number types for a region."""
+    return _phone_util.get_supported_types_for_region(region_code)
+
+def get_metadata_for_region(region_code):
+    """Get phone metadata for a specific region."""
+    return PhoneMetadata(region_code)

@@ -2,7 +2,8 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.map cimport map
 from libcpp.vector cimport vector
-from libc.stdint cimport uint64_t
+from libcpp.set cimport set as cppset
+from libc.stdint cimport uint64_t, int32_t
 
 cdef extern from "phonenumbers/phonenumber.pb.h" namespace "i18n::phonenumbers":
     cdef cppclass PhoneNumber:
@@ -65,6 +66,59 @@ cdef extern from * namespace "":
         SOURCE_FROM_NUMBER_WITHOUT_PLUS_SIGN "i18n::phonenumbers::PhoneNumber_CountryCodeSource_FROM_NUMBER_WITHOUT_PLUS_SIGN" = 10
         SOURCE_FROM_DEFAULT_COUNTRY "i18n::phonenumbers::PhoneNumber_CountryCodeSource_FROM_DEFAULT_COUNTRY" = 20
 
+cdef extern from "phonenumbers/phonemetadata.pb.h" namespace "i18n::phonenumbers":
+    cdef cppclass NumberFormat:
+        NumberFormat()
+        
+        # Pattern and format
+        bool has_pattern()
+        string pattern()
+        void set_pattern(const string& value)
+        
+        bool has_format()
+        string format()
+        void set_format(const string& value)
+        
+        # Leading digits patterns
+        int leading_digits_pattern_size()
+        string leading_digits_pattern(int index)
+        void add_leading_digits_pattern(const string& value)
+        
+        # Formatting rules
+        bool has_national_prefix_formatting_rule()
+        string national_prefix_formatting_rule()
+        void set_national_prefix_formatting_rule(const string& value)
+        
+        bool has_domestic_carrier_code_formatting_rule()
+        string domestic_carrier_code_formatting_rule()
+        void set_domestic_carrier_code_formatting_rule(const string& value)
+        
+        bool has_national_prefix_optional_when_formatting()
+        bool national_prefix_optional_when_formatting()
+        void set_national_prefix_optional_when_formatting(bool value)
+
+    cdef cppclass PhoneNumberDesc:
+        PhoneNumberDesc()
+        
+        # Pattern and example
+        bool has_national_number_pattern()
+        string national_number_pattern()
+        void set_national_number_pattern(const string& value)
+        
+        bool has_example_number()
+        string example_number()
+        void set_example_number(const string& value)
+        
+        # Possible lengths
+        int possible_length_size()
+        int32_t possible_length(int index)
+        void add_possible_length(int32_t value)
+        
+        int possible_length_local_only_size()
+        int32_t possible_length_local_only(int index)
+        void add_possible_length_local_only(int32_t value)
+
+
 cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers":
     cdef cppclass PhoneNumberUtil:
         @staticmethod
@@ -83,3 +137,9 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         void GetNationalSignificantNumber(const PhoneNumber &number, string *nationalNumber) const
         CppValidationResult IsPossibleNumberWithReason(const PhoneNumber &number) const
         bool TruncateTooLongNumber(PhoneNumber *number) const
+        
+        # Public metadata-related methods
+        void GetSupportedRegions(cppset[string]* regions) const
+        void GetSupportedGlobalNetworkCallingCodes(cppset[int]* calling_codes) const
+        void GetSupportedCallingCodes(cppset[int]* calling_codes) const
+        void GetSupportedTypesForRegion(const string& region_code, cppset[CppPhoneNumberType]* types) const
