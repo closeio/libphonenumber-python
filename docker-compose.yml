@@ -7,5 +7,10 @@ services:
       - .:/app
     environment:
       - PYTHONPATH=/app
-    # By default, run tests
-    command: bash -c "pip install -e . && python -m pytest tests -v"
+    # By default, just show a message about using the test script
+    command: >
+      bash -c "echo 'Welcome to the libphonenumber-bindings development environment!' &&
+              echo 'For running tests, please use ./run_tests.sh on your host system.' &&
+              echo 'To explore the container, run: ./run-in-docker.sh bash' &&
+              echo '' &&
+              echo 'Container is now exiting. Use ./run-in-docker.sh to run specific commands.'"

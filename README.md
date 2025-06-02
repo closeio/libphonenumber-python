@@ -42,24 +42,48 @@ We provide a Docker-based development and testing environment that includes all 
 - Docker
 - Docker Compose
 
-#### Running tests with Docker
+#### Running Tests in Docker
+
+All tests should be run inside Docker to ensure a consistent environment. We provide a unified script for running tests:
 
 ```bash
-# Build the container and run tests
-./run-in-docker.sh
-
-# Or use Docker Compose directly
-docker-compose up
+./run_tests.sh [options] [test_target]
 ```
 
-#### Interactive development with Docker
+**Test Options:**
+
+- `-h, --help`: Show help message
+- `-m, --mode MODE`: Test mode (all, specific, module, or file)
+- `-v, --verbose`: Run tests in verbose mode
+- `-k EXPRESSION`: Only run tests that match the given expression
+
+**Test Modes:**
+
+1. **all**: Run all tests (default)
+   ```bash
+   ./run_tests.sh
+   ```
+
+2. **specific**: Run a specific test class or method
+   ```bash
+   ./run_tests.sh -m specific phonenumbertest.PhoneNumberTest
+   ```
+
+3. **module**: Run all tests in a module
+   ```bash
+   ./run_tests.sh -m module phonenumbertest
+   ```
+
+4. **file**: Run all tests in a file
+   ```bash
+   ./run_tests.sh -m file tests/test_phonenumber.py
+   ```
+
+#### Interactive Development with Docker
 
 ```bash
 # Start a shell in the container
 ./run-in-docker.sh bash
-
-# Run a specific test
-./run-in-docker.sh python3 -m pytest tests/test_phonenumber.py -v
 
 # Install the package and run Python
 ./run-in-docker.sh python3
@@ -119,28 +143,15 @@ print(f"This number is from: {region}")  # US
 
 ## Development
 
-### Local development
+### Development Environment
 
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
+We strongly recommend using Docker for development to ensure a consistent environment. The Docker setup uses Ubuntu 24.04 and Python 3.10+, and automatically installs all dependencies needed for development.
 
-# Run tests
-python -m unittest discover tests
-# or
-pytest tests
-```
-
-### Docker development
-
-The Docker setup uses Ubuntu 24.04 and Python 3.10+, and automatically installs all dependencies needed for development.
+#### Setting Up the Development Environment
 
 ```bash
 # Build the Docker image
 docker-compose build
-
-# Run all tests
-docker-compose up
 
 # Run an interactive shell
 docker-compose run --rm phonenumber-py bash
@@ -148,6 +159,34 @@ docker-compose run --rm phonenumber-py bash
 # Run a specific command
 docker-compose run --rm phonenumber-py python3 -c "import phonenumber; print(phonenumber.__version__)"
 ```
+
+#### Test Organization
+
+The tests are organized as follows:
+
+- `tests/test_*.py`: Our custom tests for the package
+- `tests/compat/`: Compatibility layer for running imported tests
+- `tests/*test.py`: Tests imported from python-phonenumbers reference implementation
+
+#### Running Tests
+
+Always use the provided `run_tests.sh` script to run tests in Docker:
+
+```bash
+# Run all tests
+./run_tests.sh
+
+# Run a specific test class
+./run_tests.sh -m specific phonenumbertest.PhoneNumberTest
+
+# Run tests in verbose mode
+./run_tests.sh -v
+
+# Run tests matching a specific pattern
+./run_tests.sh -k "country_code"
+```
+
+For more options, run `./run_tests.sh --help`
 
 ## Roadmap
 

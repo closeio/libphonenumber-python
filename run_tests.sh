@@ -1,52 +1,113 @@
 #!/bin/bash
+# Main test runner script for libphonenumber-bindings
+# This always runs tests inside Docker for a consistent environment
+
 set -e
 
-echo "===== Testing Python bindings for libphonenumber ====="
+# Default test mode is to run all tests
+MODE="all"
+TEST_TARGET=""
+PYTEST_ARGS=""
 
-# Determine if we're running in a Docker container
-if [ -f "/.dockerenv" ]; then
-    echo "Running in Docker container"
-    
-    # Make sure the package is installed in development mode
-    echo "Installing package in development mode..."
-    pip install -e .
-else
-    echo "Running on host system"
-    
-    # Check if Docker is available and offer to run in Docker
-    if command -v docker > /dev/null && command -v docker-compose > /dev/null; then
-        echo "Docker detected. You can also run tests in Docker with:"
-        echo "./run-in-docker.sh"
-        echo ""
-        
-        read -p "Run tests in Docker instead? (y/n) " choice
-        if [[ "$choice" =~ ^[Yy]$ ]]; then
-            exec ./run-in-docker.sh "$@"
+# Print help message
+function show_help {
+    echo "Usage: $0 [options] [test_target]"
+    echo ""
+    echo "Run tests for libphonenumber-bindings in Docker."
+    echo ""
+    echo "Options:"
+    echo "  -h, --help           Show this help message"
+    echo "  -m, --mode MODE      Test mode: all, specific, module, or file"
+    echo "                       all:      Run all tests (default)"
+    echo "                       specific: Run a specific test class or method"
+    echo "                       module:   Run all tests in a module"
+    echo "                       file:     Run all tests in a file"
+    echo "  -v, --verbose        Run tests in verbose mode"
+    echo "  -k EXPRESSION        Only run tests that match the given expression"
+    echo ""
+    echo "Examples:"
+    echo "  $0                              # Run all tests"
+    echo "  $0 -m specific phonenumbertest.PhoneNumberTest  # Run specific test class"
+    echo "  $0 -m module phonenumbertest    # Run all tests in phonenumbertest module"
+    echo "  $0 -m file tests/test_phonenumber.py  # Run all tests in a file"
+    echo "  $0 -v -k \"country_code\"        # Run tests matching 'country_code' in verbose mode"
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -m|--mode)
+            MODE="$2"
+            shift 2
+            ;;
+        -v|--verbose)
+            PYTEST_ARGS="$PYTEST_ARGS -v"
+            shift
+            ;;
+        -k)
+            PYTEST_ARGS="$PYTEST_ARGS -k \"$2\""
+            shift 2
+            ;;
+        *)
+            if [ -z "$TEST_TARGET" ]; then
+                TEST_TARGET="$1"
+            else
+                echo "Error: Multiple test targets specified"
+                show_help
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Build Docker container
+echo "Building Docker container..."
+docker-compose build
+
+# Construct the test command based on mode
+case $MODE in
+    all)
+        echo "Running all tests in Docker container..."
+        COMMAND="pip install -e . && python -m pytest tests $PYTEST_ARGS"
+        ;;
+    specific)
+        if [ -z "$TEST_TARGET" ]; then
+            echo "Error: No test target specified for specific mode"
+            show_help
+            exit 1
         fi
-    fi
-    
-    # Install in dev mode if not already installed
-    if ! pip show phonenumber-py > /dev/null 2>&1; then
-        echo "Installing package in development mode..."
-        pip install -e .
-    fi
-fi
+        echo "Running specific test $TEST_TARGET in Docker container..."
+        COMMAND="pip install -e . && python -m tests.run_test $TEST_TARGET"
+        ;;
+    module)
+        if [ -z "$TEST_TARGET" ]; then
+            echo "Error: No module specified for module mode"
+            show_help
+            exit 1
+        fi
+        echo "Running all tests in module $TEST_TARGET in Docker container..."
+        COMMAND="pip install -e . && python -m pytest tests/$TEST_TARGET.py $PYTEST_ARGS"
+        ;;
+    file)
+        if [ -z "$TEST_TARGET" ]; then
+            echo "Error: No file specified for file mode"
+            show_help
+            exit 1
+        fi
+        echo "Running all tests in file $TEST_TARGET in Docker container..."
+        COMMAND="pip install -e . && python -m pytest $TEST_TARGET $PYTEST_ARGS"
+        ;;
+    *)
+        echo "Error: Invalid mode $MODE"
+        show_help
+        exit 1
+        ;;
+esac
 
-# Run the tests
-if command -v pytest > /dev/null; then
-    echo "Running tests with pytest..."
-    if [ $# -eq 0 ]; then
-        pytest tests -v
-    else
-        pytest "$@"
-    fi
-else
-    echo "Running tests with unittest..."
-    if [ $# -eq 0 ]; then
-        python -m unittest discover tests
-    else
-        python -m unittest "$@"
-    fi
-fi
-
-echo "===== Tests completed ====="
+# Run the tests in Docker
+docker-compose run --rm phonenumber-py bash -c "$COMMAND"
