@@ -111,7 +111,25 @@ class FrozenPhoneNumber(PhoneNumber):
             
     def __delattr__(self, name):
         if getattr(self, '_mutable', True):
-            super().__delattr__(name)
+            # Special case for properties
+            if name == 'country_code':
+                self._country_code = None
+            elif name == 'national_number':
+                self._national_number = None
+            elif name == 'extension':
+                self._extension = None
+            elif name == 'italian_leading_zero':
+                self._italian_leading_zero = False
+            elif name == 'number_of_leading_zeros':
+                self._number_of_leading_zeros = 0
+            elif name == 'raw_input':
+                self._raw_input = None
+            elif name == 'country_code_source':
+                self._country_code_source = 0
+            elif name == 'preferred_domestic_carrier_code':
+                self._preferred_domestic_carrier_code = None
+            else:
+                super().__delattr__(name)
         else:
             raise TypeError("Cannot modify a FrozenPhoneNumber")
     
