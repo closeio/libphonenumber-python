@@ -1,0 +1,11 @@
+services:
+  phonenumber-py:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    # By default, run tests
+    command: bash -c "pip install -e . && python -m pytest tests -v"
