@@ -58,6 +58,15 @@ cdef extern from * namespace "":
         RESULT_INVALID_LENGTH "i18n::phonenumbers::PhoneNumberUtil::INVALID_LENGTH" = 4
         RESULT_TOO_LONG "i18n::phonenumbers::PhoneNumberUtil::TOO_LONG" = 5
     
+    # Parse error types
+    cdef enum CppErrorType "i18n::phonenumbers::PhoneNumberUtil::ErrorType":
+        ERROR_NO_ERROR "i18n::phonenumbers::PhoneNumberUtil::NO_PARSING_ERROR" = 0
+        ERROR_INVALID_COUNTRY_CODE "i18n::phonenumbers::PhoneNumberUtil::INVALID_COUNTRY_CODE" = 1
+        ERROR_NOT_A_NUMBER "i18n::phonenumbers::PhoneNumberUtil::NOT_A_NUMBER" = 2
+        ERROR_TOO_SHORT_AFTER_IDD "i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_AFTER_IDD" = 3
+        ERROR_TOO_SHORT_NSN "i18n::phonenumbers::PhoneNumberUtil::TOO_SHORT_NSN" = 4
+        ERROR_TOO_LONG "i18n::phonenumbers::PhoneNumberUtil::TOO_LONG" = 5
+
     # Country code source
     cdef enum CppCountryCodeSource "i18n::phonenumbers::PhoneNumber_CountryCodeSource":
         SOURCE_UNSPECIFIED "i18n::phonenumbers::PhoneNumber_CountryCodeSource_UNSPECIFIED" = 0
@@ -127,7 +136,7 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         void Format(const PhoneNumber &number, CppPhoneNumberFormat numberFormat, string* formatted_number) const
         bool IsValidNumber(const PhoneNumber &number) const
         bool IsValidNumberForRegion(const PhoneNumber &number, const string &regionCode) const
-        bool Parse(const string &numberToParse, const string &defaultRegion, PhoneNumber *phoneNumber) const
+        CppErrorType Parse(const string &numberToParse, const string &defaultRegion, PhoneNumber *phoneNumber) const
         CppPhoneNumberType GetNumberType(const PhoneNumber &number) const
         void GetRegionCodeForNumber(const PhoneNumber &number, string *region) const
         bool GetExampleNumber(const string &regionCode, PhoneNumber *number) const

@@ -21,9 +21,58 @@ from .phonenumber_defs cimport (
     CppPhoneNumberType,
     CppCountryCodeSource,
     CppValidationResult,
+    CppErrorType,
 )
 
 __version__ = "0.1.0"
+
+# Exception class
+class NumberParseException(Exception):
+    """Exception when attempting to parse a putative phone number"""
+
+    # The reason a string could not be interpreted as a phone number.
+
+    # The country code supplied did not belong to a supported country or
+    # non-geographical entity.
+    INVALID_COUNTRY_CODE = 0
+
+    # This generally indicates the string passed in had fewer than 3 digits in
+    # it.  The number failed to match the regular expression
+    # _VALID_PHONE_NUMBER in phonenumberutil.py.
+
+    # This indicates the string passed is not a valid number. Either the string
+    # had less than 3 digits in it or had an invalid phone-context
+    # parameter. More specifically, the number failed to match the regular
+    # expression _VALID_PHONE_NUMBER, RFC3966_GLOBAL_NUMBER_DIGITS, or
+    # _RFC3966_DOMAINNAME in phonenumberutil.py.
+    NOT_A_NUMBER = 1
+
+    # This indicates the string started with an international dialing prefix,
+    # but after this was removed, it had fewer digits than any valid phone
+    # number (including country code) could have.
+    TOO_SHORT_AFTER_IDD = 2
+
+    # This indicates the string, after any country code has been stripped,
+    # had fewer digits than any valid phone number could have.
+    TOO_SHORT_NSN = 3
+
+    # This indicates the string had more digits than any valid phone number
+    # could have
+    TOO_LONG = 4
+
+    def __init__(self, error_type, msg):
+        Exception.__init__(self, msg)
+        self.error_type = error_type
+        self._msg = msg
+
+    def __reduce__(self):
+        return (type(self), (self.error_type, self._msg))
+
+    def __str__(self):
+        return f"({self.error_type}) {self._msg}"
+
+    def __repr__(self):
+        return f"NumberParseException(error_type={self.error_type}, msg='{self._msg}')"
 
 # Enum definitions
 class PhoneNumberFormat:
@@ -398,7 +447,7 @@ cdef class PhoneMetadata:
         if isinstance(phone_number, str):
             try:
                 parsed_number = parse(phone_number, self._region_code)
-            except:
+            except NumberParseException:
                 return False
         else:
             parsed_number = phone_number
@@ -415,7 +464,7 @@ cdef class PhoneMetadata:
         if isinstance(phone_number, str):
             try:
                 parsed_number = parse(phone_number, self._region_code)
-            except:
+            except NumberParseException:
                 return None
         else:
             parsed_number = phone_number
@@ -600,16 +649,19 @@ cdef class PhoneNumberUtil:
         """Parse a string into a PhoneNumber object."""
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
-        cdef bool success
+        cdef CppErrorType error_type
         
-        success = util.Parse(
+        error_type = util.Parse(
             number_to_parse.encode('utf-8'),
             default_region.encode('utf-8'),
             phone_number._phone_number
         )
         
-        if not success:
-            raise ValueError(f"Could not parse {number_to_parse} for region {default_region}")
+        if error_type != 0:  # ERROR_NO_ERROR = 0
+            # Map C++ error types to Python exception error types
+            python_error_type = error_type - 1  # C++ starts from 1, Python from 0 for error codes
+            raise NumberParseException(python_error_type, 
+                                     f"Could not parse {number_to_parse} for region {default_region}")
         
         return phone_number
     
