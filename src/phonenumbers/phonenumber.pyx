@@ -9,6 +9,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.set cimport set as cppset
+from libcpp.list cimport list as cpplist
 from cython.operator cimport dereference as deref, postincrement as postinc
 
 # Use a relative import path
@@ -803,6 +804,29 @@ cdef class PhoneNumberUtil:
             py_types.append(deref(it))
             postinc(it)  # Use pre-increment operator
         return py_types
+    
+    def get_region_code_for_country_code(self, country_code):
+        """Get the primary region code for a country calling code."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef string region_code
+        util.GetRegionCodeForCountryCode(country_code, &region_code)
+        
+        if region_code.empty():
+            return None
+        return region_code.decode('utf-8')
+    
+    def get_region_codes_for_country_calling_code(self, country_calling_code):
+        """Get all region codes for a country calling code."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef cpplist[string] region_codes
+        util.GetRegionCodesForCountryCallingCode(country_calling_code, &region_codes)
+        
+        py_codes = []
+        cdef cpplist[string].iterator it = region_codes.begin()
+        while it != region_codes.end():
+            py_codes.append(deref(it).decode('utf-8'))
+            postinc(it)
+        return py_codes
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
@@ -881,3 +905,11 @@ def get_supported_types_for_region(region_code):
 def get_metadata_for_region(region_code):
     """Get phone metadata for a specific region."""
     return PhoneMetadata(region_code)
+
+def region_code_for_country_code(country_code):
+    """Get the primary region code for a country calling code."""
+    return _phone_util.get_region_code_for_country_code(country_code)
+
+def region_codes_for_country_calling_code(country_calling_code):
+    """Get all region codes for a country calling code."""
+    return _phone_util.get_region_codes_for_country_calling_code(country_calling_code)

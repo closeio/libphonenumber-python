@@ -3,6 +3,7 @@ from libcpp.string cimport string
 from libcpp.map cimport map
 from libcpp.vector cimport vector
 from libcpp.set cimport set as cppset
+from libcpp.list cimport list as cpplist
 from libc.stdint cimport uint64_t, int32_t
 
 cdef extern from "phonenumbers/phonenumber.pb.h" namespace "i18n::phonenumbers":
@@ -152,3 +153,7 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         void GetSupportedGlobalNetworkCallingCodes(cppset[int]* calling_codes) const
         void GetSupportedCallingCodes(cppset[int]* calling_codes) const
         void GetSupportedTypesForRegion(const string& region_code, cppset[CppPhoneNumberType]* types) const
+        
+        # Region code methods
+        void GetRegionCodeForCountryCode(int country_code, string* region_code) const
+        void GetRegionCodesForCountryCallingCode(int country_calling_code, cpplist[string]* region_codes) const
