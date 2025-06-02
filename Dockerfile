@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     g++ \
     libphonenumber-dev \
+    libicu-dev \
     python3-dev \
     python3-pip \
     python3-setuptools \

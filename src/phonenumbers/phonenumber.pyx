@@ -25,6 +25,22 @@ from .phonenumber_defs cimport (
     CppErrorType,
 )
 
+# Geocoder support
+cdef extern from "unicode/locid.h" namespace "icu":
+    cdef cppclass Locale:
+        Locale()
+        Locale(const char* language)
+        Locale(const char* language, const char* country)
+
+cdef extern from "phonenumbers/geocoding/phonenumber_offline_geocoder.h" namespace "i18n::phonenumbers":
+    cdef cppclass PhoneNumberOfflineGeocoder:
+        PhoneNumberOfflineGeocoder()
+        
+        string GetDescriptionForValidNumber(const CppPhoneNumber& number, const Locale& language) const
+        string GetDescriptionForValidNumber(const CppPhoneNumber& number, const Locale& language, const string& user_region) const
+        string GetDescriptionForNumber(const CppPhoneNumber& number, const Locale& locale) const
+        string GetDescriptionForNumber(const CppPhoneNumber& number, const Locale& language, const string& user_region) const
+
 __version__ = "0.1.0"
 
 # Exception class
@@ -1074,3 +1090,99 @@ def region_code_for_country_code(country_code):
 def region_codes_for_country_calling_code(country_calling_code):
     """Get all region codes for a country calling code."""
     return _phone_util.get_region_codes_for_country_calling_code(country_calling_code)
+
+# Global geocoder instance - use a pointer since it's not copyable
+cdef PhoneNumberOfflineGeocoder* _geocoder = new PhoneNumberOfflineGeocoder()
+
+def description_for_number(PhoneNumber number, language="en", region=None):
+    """
+    Returns a text description for the given phone number, in the language provided.
+    
+    Args:
+        number: PhoneNumber object
+        language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
+        region: Optional region code for the user. If provided, descriptions will be
+               adjusted based on the user's location.
+    
+    Returns:
+        str: Description of the phone number location, or empty string if unavailable.
+    """
+    cdef Locale locale
+    cdef string description
+    cdef string user_region_str
+    
+    # Create locale from language code
+    locale = Locale(language.encode('utf-8'))
+    
+    if region is not None:
+        user_region_str = region.encode('utf-8')
+        description = deref(_geocoder).GetDescriptionForNumber(
+            deref(number._phone_number), 
+            locale, 
+            user_region_str
+        )
+    else:
+        description = deref(_geocoder).GetDescriptionForNumber(
+            deref(number._phone_number), 
+            locale
+        )
+    
+    return description.decode('utf-8')
+
+def description_for_valid_number(PhoneNumber number, language="en", region=None):
+    """
+    Returns a text description for the given phone number, assuming it's valid.
+    
+    This method assumes the validity of the number has already been checked.
+    
+    Args:
+        number: PhoneNumber object (assumed to be valid)
+        language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
+        region: Optional region code for the user. If provided, descriptions will be
+               adjusted based on the user's location.
+    
+    Returns:
+        str: Description of the phone number location, or empty string if unavailable.
+    """
+    cdef Locale locale
+    cdef string description
+    cdef string user_region_str
+    
+    # Create locale from language code
+    locale = Locale(language.encode('utf-8'))
+    
+    if region is not None:
+        user_region_str = region.encode('utf-8')
+        description = deref(_geocoder).GetDescriptionForValidNumber(
+            deref(number._phone_number), 
+            locale, 
+            user_region_str
+        )
+    else:
+        description = deref(_geocoder).GetDescriptionForValidNumber(
+            deref(number._phone_number), 
+            locale
+        )
+    
+    return description.decode('utf-8')
+
+def country_name_for_number(PhoneNumber number, language="en"):
+    """
+    Returns the country name for the given phone number in the specified language.
+    
+    This is a convenience function that extracts just the country-level information.
+    
+    Args:
+        number: PhoneNumber object
+        language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
+    
+    Returns:
+        str: Country name for the phone number, or empty string if unavailable.
+    """
+    # Get the region for this number
+    region_code = _phone_util.get_region_code_for_number(number)
+    if not region_code:
+        return ""
+    
+    # Use the region-aware geocoding to get a more focused description
+    return description_for_number(number, language, region_code)

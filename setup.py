@@ -12,7 +12,7 @@ extensions = [
             "/usr/local/include",
             "/opt/homebrew/include",
         ],
-        libraries=["phonenumber"],
+        libraries=["phonenumber", "geocoding"],
         library_dirs=[
             # Add libphonenumber library directories
             "/usr/local/lib",
@@ -30,7 +30,7 @@ setup(
     description="Python bindings for Google's libphonenumber library",
     author="Alec",
     author_email="example@example.com",
-    packages=["phonenumbers"],
+    packages=["phonenumbers", "phonenumbers.geocoder"],
     package_dir={"phonenumbers": "src/phonenumbers"},
     ext_modules=cythonize(extensions, compiler_directives={'language_level': 3}),
     python_requires=">=3.10",
