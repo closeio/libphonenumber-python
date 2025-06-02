@@ -26,6 +26,7 @@ if project_root not in sys.path:
 
 # Import the test utilities
 from test_utils import setup_test_environment
+from ignore_in_pytest import run_specific_test
 
 def main():
     """Run the specified test."""

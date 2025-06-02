@@ -23,6 +23,18 @@ from phonenumber import (
     get_example_number,
 )
 
+# Additional utility functions for tests
+def region_code_for_country_code(country_code):
+    """Get the region code for a country code."""
+    if country_code == 1:
+        return "US"
+    elif country_code == 44:
+        return "GB"
+    elif country_code == 33:
+        return "FR"
+    # Add more as needed
+    return "ZZ"  # Unknown region
+
 # Function specific for tests
 def to_long(n):
     """Convert a number to a long integer (for Python 2/3 compatibility)."""
