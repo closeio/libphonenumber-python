@@ -1094,12 +1094,12 @@ def region_codes_for_country_calling_code(country_calling_code):
 # Global geocoder instance - use a pointer since it's not copyable
 cdef PhoneNumberOfflineGeocoder* _geocoder = new PhoneNumberOfflineGeocoder()
 
-def description_for_number(PhoneNumber number, language="en", region=None):
+def description_for_number(number, language="en", region=None):
     """
     Returns a text description for the given phone number, in the language provided.
     
     Args:
-        number: PhoneNumber object
+        number: PhoneNumber or FrozenPhoneNumber object
         language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
         region: Optional region code for the user. If provided, descriptions will be
                adjusted based on the user's location.
@@ -1107,6 +1107,15 @@ def description_for_number(PhoneNumber number, language="en", region=None):
     Returns:
         str: Description of the phone number location, or empty string if unavailable.
     """
+    # Convert FrozenPhoneNumber to PhoneNumber if needed
+    cdef PhoneNumber phone_number
+    if isinstance(number, FrozenPhoneNumber):
+        phone_number = number.to_phone_number()
+    elif isinstance(number, PhoneNumber):
+        phone_number = number
+    else:
+        raise TypeError("Expected PhoneNumber or FrozenPhoneNumber")
+    
     cdef Locale locale
     cdef string description
     cdef string user_region_str
@@ -1117,26 +1126,26 @@ def description_for_number(PhoneNumber number, language="en", region=None):
     if region is not None:
         user_region_str = region.encode('utf-8')
         description = deref(_geocoder).GetDescriptionForNumber(
-            deref(number._phone_number), 
+            deref(phone_number._phone_number), 
             locale, 
             user_region_str
         )
     else:
         description = deref(_geocoder).GetDescriptionForNumber(
-            deref(number._phone_number), 
+            deref(phone_number._phone_number), 
             locale
         )
     
     return description.decode('utf-8')
 
-def description_for_valid_number(PhoneNumber number, language="en", region=None):
+def description_for_valid_number(number, language="en", region=None):
     """
     Returns a text description for the given phone number, assuming it's valid.
     
     This method assumes the validity of the number has already been checked.
     
     Args:
-        number: PhoneNumber object (assumed to be valid)
+        number: PhoneNumber or FrozenPhoneNumber object (assumed to be valid)
         language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
         region: Optional region code for the user. If provided, descriptions will be
                adjusted based on the user's location.
@@ -1144,6 +1153,15 @@ def description_for_valid_number(PhoneNumber number, language="en", region=None)
     Returns:
         str: Description of the phone number location, or empty string if unavailable.
     """
+    # Convert FrozenPhoneNumber to PhoneNumber if needed
+    cdef PhoneNumber phone_number
+    if isinstance(number, FrozenPhoneNumber):
+        phone_number = number.to_phone_number()
+    elif isinstance(number, PhoneNumber):
+        phone_number = number
+    else:
+        raise TypeError("Expected PhoneNumber or FrozenPhoneNumber")
+    
     cdef Locale locale
     cdef string description
     cdef string user_region_str
@@ -1154,33 +1172,42 @@ def description_for_valid_number(PhoneNumber number, language="en", region=None)
     if region is not None:
         user_region_str = region.encode('utf-8')
         description = deref(_geocoder).GetDescriptionForValidNumber(
-            deref(number._phone_number), 
+            deref(phone_number._phone_number), 
             locale, 
             user_region_str
         )
     else:
         description = deref(_geocoder).GetDescriptionForValidNumber(
-            deref(number._phone_number), 
+            deref(phone_number._phone_number), 
             locale
         )
     
     return description.decode('utf-8')
 
-def country_name_for_number(PhoneNumber number, language="en"):
+def country_name_for_number(number, language="en"):
     """
     Returns the country name for the given phone number in the specified language.
     
     This is a convenience function that extracts just the country-level information.
     
     Args:
-        number: PhoneNumber object
+        number: PhoneNumber or FrozenPhoneNumber object
         language: Language code (e.g., "en", "fr", "de"). Defaults to "en".
     
     Returns:
         str: Country name for the phone number, or empty string if unavailable.
     """
+    # Convert FrozenPhoneNumber to PhoneNumber if needed
+    cdef PhoneNumber phone_number
+    if isinstance(number, FrozenPhoneNumber):
+        phone_number = number.to_phone_number()
+    elif isinstance(number, PhoneNumber):
+        phone_number = number
+    else:
+        raise TypeError("Expected PhoneNumber or FrozenPhoneNumber")
+    
     # Get the region for this number
-    region_code = _phone_util.get_region_code_for_number(number)
+    region_code = _phone_util.get_region_code_for_number(phone_number)
     if not region_code:
         return ""
     
