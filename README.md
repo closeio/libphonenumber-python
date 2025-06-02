@@ -19,6 +19,8 @@ Python bindings for Google's [libphonenumber](https://github.com/google/libphone
 - 🚧 C++ bindings using Cython (in progress)
 - 🔜 Performance optimizations and full test coverage
 
+See [STATUS.md](STATUS.md) for detailed implementation status and next steps.
+
 ## Installation
 
 ### Prerequisites

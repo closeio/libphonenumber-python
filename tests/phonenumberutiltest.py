@@ -29,7 +29,7 @@ from phonenumbers import region_code_for_country_code, MatchType
 from phonenumbers import phonenumberutil, shortnumberinfo
 from phonenumbers.phonenumberutil import NumberParseException
 from phonenumbers.util import u, to_long
-from .testmetadatatest import TestMetadataTestCase
+from tests.compat.phonenumbers.testmetadatatest import TestMetadataTestCase
 
 
 # Set up some test numbers to re-use.

@@ -19,6 +19,65 @@ class NumberParseExceptionType:
     TOO_SHORT_AFTER_IDD = 2
     TOO_SHORT_NSN = 3
     TOO_LONG = 4
+    
+# Phone number metadata
+class PhoneMetadata:
+    """Phone number metadata."""
+    # Class variables for metadata storage
+    _region_available = {"US", "GB", "FR"}
+    _country_code_available = {1, 44, 33}
+    _region_metadata = {}
+    _country_code_metadata = {}
+    
+    def __init__(self):
+        self.id = None
+        self.country_code = None
+        self.leading_digits = None
+        self.international_prefix = None
+        self.national_prefix = None
+        self.preferred_extn_prefix = None
+        self.national_prefix_for_parsing = None
+        self.national_prefix_transform_rule = None
+        self.number_format = []
+        self.intl_number_format = []
+        self.general_desc = None
+        self.fixed_line = None
+        self.mobile = None
+        self.toll_free = None
+        self.premium_rate = None
+        self.shared_cost = None
+        self.personal_number = None
+        self.voip = None
+        self.pager = None
+        self.uan = None
+        self.emergency = None
+        self.voicemail = None
+        self.short_code = None
+        self.standard_rate = None
+        self.carrier_specific = None
+        self.sms_services = None
+        self.no_international_dialling = None
+        self.main_country_for_code = False
+        self.leading_zero_possible = False
+        self.mobile_number_portable_region = False
+        self.register = True
+
+class NumberFormat:
+    """Number format metadata."""
+    def __init__(self):
+        self.pattern = None
+        self.format = None
+        self.leading_digits_pattern = []
+        self.national_prefix_formatting_rule = None
+        self.national_prefix_optional_when_formatting = False
+        self.domestic_carrier_code_formatting_rule = None
+
+class PhoneNumberDesc:
+    """Phone number description."""
+    def __init__(self):
+        self.national_number_pattern = None
+        self.possible_number_pattern = None
+        self.example_number = None
 
 # The real implementation would use the Cython module
 # This is just a stub for demonstration
