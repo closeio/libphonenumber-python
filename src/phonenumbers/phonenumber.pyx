@@ -122,8 +122,29 @@ cdef class PhoneNumber:
     """
     cdef CppPhoneNumber* _phone_number
 
-    def __cinit__(self):
+    def __cinit__(self, country_code=None, national_number=None, extension=None,
+                  italian_leading_zero=None, number_of_leading_zeros=None,
+                  raw_input=None, country_code_source=None, 
+                  preferred_domestic_carrier_code=None):
         self._phone_number = new CppPhoneNumber()
+        
+        # Set properties if provided
+        if country_code is not None:
+            self.country_code = country_code
+        if national_number is not None:
+            self.national_number = national_number
+        if extension is not None:
+            self.extension = str(extension)
+        if italian_leading_zero is not None:
+            self.italian_leading_zero = italian_leading_zero
+        if number_of_leading_zeros is not None:
+            self.number_of_leading_zeros = number_of_leading_zeros
+        if raw_input is not None:
+            self.raw_input = raw_input
+        if country_code_source is not None:
+            self.country_code_source = country_code_source
+        if preferred_domestic_carrier_code is not None:
+            self.preferred_domestic_carrier_code = preferred_domestic_carrier_code
     
     def __dealloc__(self):
         del self._phone_number
@@ -205,6 +226,66 @@ cdef class PhoneNumber:
     
     def __repr__(self):
         return f"PhoneNumber(country_code={self.country_code}, national_number={self.national_number})"
+    
+    def __eq__(self, other):
+        if not isinstance(other, PhoneNumber):
+            return False
+        
+        # Compare basic fields (always required)
+        if (self.country_code != other.country_code or
+            self.national_number != other.national_number or
+            self.extension != other.extension):
+            return False
+        
+        # Italian leading zero: special case where False==False regardless of has-state
+        if self.italian_leading_zero != other.italian_leading_zero:
+            return False
+        if (self.italian_leading_zero or other.italian_leading_zero):
+            if self._has_italian_leading_zero() != other._has_italian_leading_zero():
+                return False
+        
+        # All other optional fields: both value and has-state must match
+        return (
+            self.number_of_leading_zeros == other.number_of_leading_zeros and
+            self._has_number_of_leading_zeros() == other._has_number_of_leading_zeros() and
+            self.raw_input == other.raw_input and
+            self._has_raw_input() == other._has_raw_input() and
+            self.country_code_source == other.country_code_source and
+            self._has_country_code_source() == other._has_country_code_source() and
+            self.preferred_domestic_carrier_code == other.preferred_domestic_carrier_code and
+            self._has_preferred_domestic_carrier_code() == other._has_preferred_domestic_carrier_code()
+        )
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    def merge_from(self, other):
+        """Merge all fields from another PhoneNumber into this one."""
+        if not isinstance(other, PhoneNumber):
+            raise TypeError("Can only merge from another PhoneNumber")
+        self.country_code = other.country_code
+        self.national_number = other.national_number
+        self.extension = other.extension
+        self.italian_leading_zero = other.italian_leading_zero
+        self.number_of_leading_zeros = other.number_of_leading_zeros
+        self.raw_input = other.raw_input
+        self.country_code_source = other.country_code_source
+        self.preferred_domestic_carrier_code = other.preferred_domestic_carrier_code
+    
+    def _has_italian_leading_zero(self):
+        return self._phone_number.has_italian_leading_zero()
+    
+    def _has_number_of_leading_zeros(self):
+        return self._phone_number.has_number_of_leading_zeros()
+    
+    def _has_raw_input(self):
+        return self._phone_number.has_raw_input()
+    
+    def _has_country_code_source(self):
+        return self._phone_number.has_country_code_source()
+    
+    def _has_preferred_domestic_carrier_code(self):
+        return self._phone_number.has_preferred_domestic_carrier_code()
 
 # NumberFormat class
 cdef class NumberFormat:
@@ -493,19 +574,59 @@ cdef class FrozenPhoneNumber:
     cdef readonly int _country_code_source
     cdef readonly str _preferred_domestic_carrier_code
     cdef readonly int _hash
+    cdef public bool _mutable
     
-    def __cinit__(self, int country_code, object national_number, str extension="", 
+    def __cinit__(self, phone_number_or_country_code=None, national_number=None, str extension="", 
                   bool italian_leading_zero=False, int number_of_leading_zeros=1,
                   str raw_input="", int country_code_source=0, 
-                  str preferred_domestic_carrier_code=""):
-        self._country_code = country_code
-        self._national_number = national_number
-        self._extension = extension
-        self._italian_leading_zero = italian_leading_zero
-        self._number_of_leading_zeros = number_of_leading_zeros
-        self._raw_input = raw_input
-        self._country_code_source = country_code_source
-        self._preferred_domestic_carrier_code = preferred_domestic_carrier_code
+                  str preferred_domestic_carrier_code="", **kwargs):
+        # Handle keyword arguments
+        if 'country_code' in kwargs:
+            phone_number_or_country_code = kwargs['country_code']
+        if 'extension' in kwargs:
+            extension = str(kwargs['extension'])
+        if 'italian_leading_zero' in kwargs:
+            italian_leading_zero = kwargs['italian_leading_zero']
+        if 'number_of_leading_zeros' in kwargs:
+            number_of_leading_zeros = kwargs['number_of_leading_zeros']
+        if 'raw_input' in kwargs:
+            raw_input = kwargs['raw_input']
+        if 'country_code_source' in kwargs:
+            country_code_source = kwargs['country_code_source']
+        if 'preferred_domestic_carrier_code' in kwargs:
+            preferred_domestic_carrier_code = kwargs['preferred_domestic_carrier_code']
+        
+        # Handle the case where first argument is a PhoneNumber object
+        if isinstance(phone_number_or_country_code, PhoneNumber):
+            phone_number = phone_number_or_country_code
+            self._country_code = phone_number.country_code
+            self._national_number = phone_number.national_number
+            self._extension = phone_number.extension
+            self._italian_leading_zero = phone_number.italian_leading_zero
+            self._number_of_leading_zeros = phone_number.number_of_leading_zeros
+            self._raw_input = phone_number.raw_input
+            self._country_code_source = phone_number.country_code_source
+            self._preferred_domestic_carrier_code = phone_number.preferred_domestic_carrier_code
+        # Handle the case where arguments are provided separately
+        elif phone_number_or_country_code is not None and national_number is not None:
+            self._country_code = phone_number_or_country_code
+            self._national_number = national_number
+            self._extension = extension
+            self._italian_leading_zero = italian_leading_zero
+            self._number_of_leading_zeros = number_of_leading_zeros
+            self._raw_input = raw_input
+            self._country_code_source = country_code_source
+            self._preferred_domestic_carrier_code = preferred_domestic_carrier_code
+        else:
+            # Default values
+            self._country_code = 0
+            self._national_number = 0
+            self._extension = extension
+            self._italian_leading_zero = italian_leading_zero
+            self._number_of_leading_zeros = number_of_leading_zeros
+            self._raw_input = raw_input
+            self._country_code_source = country_code_source
+            self._preferred_domestic_carrier_code = preferred_domestic_carrier_code
         
         # Compute hash once during initialization
         self._hash = hash((
@@ -518,6 +639,9 @@ cdef class FrozenPhoneNumber:
             self._country_code_source,
             self._preferred_domestic_carrier_code
         ))
+        
+        # Set immutability
+        self._mutable = False
     
     @property
     def country_code(self):
@@ -579,18 +703,47 @@ cdef class FrozenPhoneNumber:
         return self._hash
     
     def __eq__(self, other):
-        if not isinstance(other, FrozenPhoneNumber):
+        if isinstance(other, FrozenPhoneNumber):
+            return (
+                self._country_code == other._country_code and
+                self._national_number == other._national_number and
+                self._extension == other._extension and
+                self._italian_leading_zero == other._italian_leading_zero and
+                self._number_of_leading_zeros == other._number_of_leading_zeros and
+                self._raw_input == other._raw_input and
+                self._country_code_source == other._country_code_source and
+                self._preferred_domestic_carrier_code == other._preferred_domestic_carrier_code
+            )
+        elif isinstance(other, PhoneNumber):
+            return (
+                self._country_code == other.country_code and
+                self._national_number == other.national_number and
+                self._extension == other.extension and
+                self._italian_leading_zero == other.italian_leading_zero and
+                self._number_of_leading_zeros == other.number_of_leading_zeros and
+                self._raw_input == other.raw_input and
+                self._country_code_source == other.country_code_source and
+                self._preferred_domestic_carrier_code == other.preferred_domestic_carrier_code
+            )
+        else:
             return False
-        return (
-            self._country_code == other._country_code and
-            self._national_number == other._national_number and
-            self._extension == other._extension and
-            self._italian_leading_zero == other._italian_leading_zero and
-            self._number_of_leading_zeros == other._number_of_leading_zeros and
-            self._raw_input == other._raw_input and
-            self._country_code_source == other._country_code_source and
-            self._preferred_domestic_carrier_code == other._preferred_domestic_carrier_code
-        )
+    
+    def __setattr__(self, name, value):
+        if name == "_mutable":
+            # Allow setting _mutable
+            self._mutable = value
+        elif hasattr(self, '_mutable') and not self._mutable:
+            raise TypeError("Can't modify immutable instance")
+        else:
+            # For readonly properties, this will fail anyway
+            raise TypeError("Can't modify immutable instance")
+    
+    def __delattr__(self, name):
+        if hasattr(self, '_mutable') and self._mutable:
+            # Allow deletion when mutable
+            pass  # Deletion will be handled by the readonly properties and cause appropriate errors
+        else:
+            raise TypeError("Can't modify immutable instance")
     
     @staticmethod
     def from_phone_number(PhoneNumber phone_number):
@@ -605,6 +758,14 @@ cdef class FrozenPhoneNumber:
             country_code_source=phone_number.country_code_source,
             preferred_domestic_carrier_code=phone_number.preferred_domestic_carrier_code
         )
+    
+    def clear(self):
+        """Raise TypeError - FrozenPhoneNumber cannot be cleared."""
+        raise TypeError("Can't modify immutable instance")
+    
+    def merge_from(self, other):
+        """Raise TypeError - FrozenPhoneNumber cannot be modified."""
+        raise TypeError("Can't modify immutable instance")
     
     def to_phone_number(self):
         """Create a mutable PhoneNumber from this FrozenPhoneNumber."""
