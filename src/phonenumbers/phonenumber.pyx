@@ -135,7 +135,7 @@ cdef class PhoneNumber:
     
     @country_code_source.setter
     def country_code_source(self, value):
-        self._phone_number.set_country_code_source(value)
+        self._phone_number.set_country_code_source(<CppCountryCodeSource>value)
     
     @property
     def preferred_domestic_carrier_code(self):
@@ -157,34 +157,35 @@ cdef class PhoneNumberUtil:
     """
     Python wrapper for libphonenumber's PhoneNumberUtil.
     """
-    cdef CppPhoneNumberUtil* _phone_util
-    
-    def __cinit__(self):
-        self._phone_util = &CppPhoneNumberUtil.GetInstance()
+    # We'll get the util instance for each method call since GetInstance() returns a reference
     
     def format(self, PhoneNumber number, int format_type):
         """Format a phone number in the specified format."""
         cdef string formatted_number
-        formatted_number = self._phone_util.Format(deref(number._phone_number), format_type)
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        util.Format(deref(number._phone_number), <CppPhoneNumberFormat>format_type, &formatted_number)
         return formatted_number.decode('utf-8')
     
     def is_valid_number(self, PhoneNumber number):
         """Return whether a phone number is valid."""
-        return self._phone_util.IsValidNumber(deref(number._phone_number))
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsValidNumber(deref(number._phone_number))
     
     def is_valid_number_for_region(self, PhoneNumber number, region_code):
         """Return whether a phone number is valid for a specific region."""
-        return self._phone_util.IsValidNumberForRegion(
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsValidNumberForRegion(
             deref(number._phone_number), 
             region_code.encode('utf-8')
         )
     
     def parse(self, number_to_parse, default_region):
         """Parse a string into a PhoneNumber object."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
         cdef bool success
         
-        success = self._phone_util.Parse(
+        success = util.Parse(
             number_to_parse.encode('utf-8'),
             default_region.encode('utf-8'),
             phone_number._phone_number
@@ -197,20 +198,23 @@ cdef class PhoneNumberUtil:
     
     def get_number_type(self, PhoneNumber number):
         """Get the type of the phone number."""
-        return self._phone_util.GetNumberType(deref(number._phone_number))
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.GetNumberType(deref(number._phone_number))
     
     def get_region_code_for_number(self, PhoneNumber number):
         """Get the region code for a phone number."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef string region
-        self._phone_util.GetRegionCodeForNumber(deref(number._phone_number), &region)
+        util.GetRegionCodeForNumber(deref(number._phone_number), &region)
         return region.decode('utf-8')
     
     def get_example_number(self, region_code):
         """Get an example phone number for a region."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
         cdef bool success
         
-        success = self._phone_util.GetExampleNumber(
+        success = util.GetExampleNumber(
             region_code.encode('utf-8'),
             phone_number._phone_number
         )
@@ -222,12 +226,13 @@ cdef class PhoneNumberUtil:
     
     def get_example_number_for_type(self, region_code, number_type):
         """Get an example phone number for a region and number type."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
         cdef bool success
         
-        success = self._phone_util.GetExampleNumberForType(
+        success = util.GetExampleNumberForType(
             region_code.encode('utf-8'),
-            number_type,
+            <CppPhoneNumberType>number_type,
             phone_number._phone_number
         )
         
@@ -238,8 +243,9 @@ cdef class PhoneNumberUtil:
     
     def format_in_original_format(self, PhoneNumber number, region_calling_from):
         """Format a phone number in its original format."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef string formatted_number
-        self._phone_util.FormatInOriginalFormat(
+        util.FormatInOriginalFormat(
             deref(number._phone_number),
             region_calling_from.encode('utf-8'),
             &formatted_number
@@ -248,8 +254,9 @@ cdef class PhoneNumberUtil:
     
     def format_out_of_country_calling_number(self, PhoneNumber number, region_calling_from):
         """Format a phone number for out-of-country calling."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef string formatted_number
-        self._phone_util.FormatOutOfCountryCallingNumber(
+        util.FormatOutOfCountryCallingNumber(
             deref(number._phone_number),
             region_calling_from.encode('utf-8'),
             &formatted_number
@@ -258,8 +265,9 @@ cdef class PhoneNumberUtil:
     
     def get_national_significant_number(self, PhoneNumber number):
         """Get the national significant number."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef string national_number
-        self._phone_util.GetNationalSignificantNumber(
+        util.GetNationalSignificantNumber(
             deref(number._phone_number),
             &national_number
         )
@@ -267,11 +275,13 @@ cdef class PhoneNumberUtil:
     
     def is_possible_number_with_reason(self, PhoneNumber number):
         """Check if a number is possible with a reason."""
-        return self._phone_util.IsPossibleNumberWithReason(deref(number._phone_number))
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsPossibleNumberWithReason(deref(number._phone_number))
     
     def truncate_too_long_number(self, PhoneNumber number):
         """Truncate a too-long number."""
-        return self._phone_util.TruncateTooLongNumber(number._phone_number)
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.TruncateTooLongNumber(number._phone_number)
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
