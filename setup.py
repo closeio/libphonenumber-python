@@ -30,7 +30,7 @@ setup(
     description="Python bindings for Google's libphonenumber library",
     author="Alec",
     author_email="example@example.com",
-    packages=["phonenumbers", "phonenumbers.geocoder"],
+    packages=["phonenumbers", "phonenumbers.geocoder", "phonenumbers.prefix"],
     package_dir={"phonenumbers": "src/phonenumbers"},
     ext_modules=cythonize(extensions, compiler_directives={'language_level': 3}),
     python_requires=">=3.10",
