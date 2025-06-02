@@ -152,6 +152,147 @@ cdef class PhoneNumber:
     def __repr__(self):
         return f"PhoneNumber(country_code={self.country_code}, national_number={self.national_number})"
 
+# Immutable phone number class
+cdef class FrozenPhoneNumber:
+    """
+    Immutable Python representation of a phone number.
+    All properties are read-only and the object is hashable.
+    """
+    cdef readonly int _country_code
+    cdef readonly object _national_number
+    cdef readonly str _extension
+    cdef readonly bool _italian_leading_zero
+    cdef readonly int _number_of_leading_zeros
+    cdef readonly str _raw_input
+    cdef readonly int _country_code_source
+    cdef readonly str _preferred_domestic_carrier_code
+    cdef readonly int _hash
+    
+    def __cinit__(self, int country_code, object national_number, str extension="", 
+                  bool italian_leading_zero=False, int number_of_leading_zeros=1,
+                  str raw_input="", int country_code_source=0, 
+                  str preferred_domestic_carrier_code=""):
+        self._country_code = country_code
+        self._national_number = national_number
+        self._extension = extension
+        self._italian_leading_zero = italian_leading_zero
+        self._number_of_leading_zeros = number_of_leading_zeros
+        self._raw_input = raw_input
+        self._country_code_source = country_code_source
+        self._preferred_domestic_carrier_code = preferred_domestic_carrier_code
+        
+        # Compute hash once during initialization
+        self._hash = hash((
+            self._country_code,
+            self._national_number,
+            self._extension,
+            self._italian_leading_zero,
+            self._number_of_leading_zeros,
+            self._raw_input,
+            self._country_code_source,
+            self._preferred_domestic_carrier_code
+        ))
+    
+    @property
+    def country_code(self):
+        """Country calling code."""
+        return self._country_code
+    
+    @property
+    def national_number(self):
+        """National number portion."""
+        return self._national_number
+    
+    @property
+    def extension(self):
+        """Extension."""
+        return self._extension
+    
+    @property
+    def italian_leading_zero(self):
+        """Whether the number has an Italian leading zero."""
+        return self._italian_leading_zero
+    
+    @property
+    def number_of_leading_zeros(self):
+        """Number of leading zeros."""
+        return self._number_of_leading_zeros
+    
+    @property
+    def raw_input(self):
+        """Raw input."""
+        return self._raw_input
+    
+    @property
+    def country_code_source(self):
+        """Country code source."""
+        return self._country_code_source
+    
+    @property
+    def preferred_domestic_carrier_code(self):
+        """Preferred domestic carrier code."""
+        return self._preferred_domestic_carrier_code
+    
+    def __str__(self):
+        # Convert to mutable PhoneNumber temporarily for formatting
+        temp_number = PhoneNumber()
+        temp_number.country_code = self._country_code
+        temp_number.national_number = self._national_number
+        temp_number.extension = self._extension
+        temp_number.italian_leading_zero = self._italian_leading_zero
+        temp_number.number_of_leading_zeros = self._number_of_leading_zeros
+        temp_number.raw_input = self._raw_input
+        temp_number.country_code_source = self._country_code_source
+        temp_number.preferred_domestic_carrier_code = self._preferred_domestic_carrier_code
+        return format_number(temp_number, PhoneNumberFormat.INTERNATIONAL)
+    
+    def __repr__(self):
+        return f"FrozenPhoneNumber(country_code={self._country_code}, national_number={self._national_number})"
+    
+    def __hash__(self):
+        return self._hash
+    
+    def __eq__(self, other):
+        if not isinstance(other, FrozenPhoneNumber):
+            return False
+        return (
+            self._country_code == other._country_code and
+            self._national_number == other._national_number and
+            self._extension == other._extension and
+            self._italian_leading_zero == other._italian_leading_zero and
+            self._number_of_leading_zeros == other._number_of_leading_zeros and
+            self._raw_input == other._raw_input and
+            self._country_code_source == other._country_code_source and
+            self._preferred_domestic_carrier_code == other._preferred_domestic_carrier_code
+        )
+    
+    @staticmethod
+    def from_phone_number(PhoneNumber phone_number):
+        """Create a FrozenPhoneNumber from a mutable PhoneNumber."""
+        return FrozenPhoneNumber(
+            country_code=phone_number.country_code,
+            national_number=phone_number.national_number,
+            extension=phone_number.extension,
+            italian_leading_zero=phone_number.italian_leading_zero,
+            number_of_leading_zeros=phone_number.number_of_leading_zeros,
+            raw_input=phone_number.raw_input,
+            country_code_source=phone_number.country_code_source,
+            preferred_domestic_carrier_code=phone_number.preferred_domestic_carrier_code
+        )
+    
+    def to_phone_number(self):
+        """Create a mutable PhoneNumber from this FrozenPhoneNumber."""
+        phone_number = PhoneNumber()
+        phone_number.country_code = self._country_code
+        phone_number.national_number = self._national_number
+        phone_number.extension = self._extension
+        phone_number.italian_leading_zero = self._italian_leading_zero
+        phone_number.number_of_leading_zeros = self._number_of_leading_zeros
+        phone_number.raw_input = self._raw_input
+        phone_number.country_code_source = self._country_code_source
+        phone_number.preferred_domestic_carrier_code = self._preferred_domestic_carrier_code
+        return phone_number
+
 # Utility class
 cdef class PhoneNumberUtil:
     """
@@ -309,3 +450,33 @@ def get_number_type(number):
 def get_example_number(region_code):
     """Get an example phone number for a region."""
     return _phone_util.get_example_number(region_code)
+
+def parse_frozen(number_string, region=None):
+    """Parse a phone number string into a FrozenPhoneNumber object."""
+    mutable_number = parse(number_string, region)
+    return FrozenPhoneNumber.from_phone_number(mutable_number)
+
+def format_frozen_number(frozen_number, format_type=PhoneNumberFormat.E164):
+    """Format a frozen phone number in the specified format."""
+    # FrozenPhoneNumber already implements __str__ which uses formatting
+    if format_type == PhoneNumberFormat.INTERNATIONAL:
+        return str(frozen_number)
+    else:
+        # Convert to mutable for other format types
+        mutable_number = frozen_number.to_phone_number()
+        return format_number(mutable_number, format_type)
+
+def is_valid_frozen_number(frozen_number):
+    """Check if a frozen phone number is valid."""
+    mutable_number = frozen_number.to_phone_number()
+    return is_valid_number(mutable_number)
+
+def get_frozen_number_type(frozen_number):
+    """Get the type of a frozen phone number."""
+    mutable_number = frozen_number.to_phone_number()
+    return get_number_type(mutable_number)
+
+def get_example_frozen_number(region_code):
+    """Get an example frozen phone number for a region."""
+    mutable_number = get_example_number(region_code)
+    return FrozenPhoneNumber.from_phone_number(mutable_number)
