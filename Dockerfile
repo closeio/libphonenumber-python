@@ -26,12 +26,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Cython and pytest in the virtual environment
 RUN pip install --no-cache-dir Cython pytest
+COPY . /app
+RUN pip install --no-cache-dir -e /app
 
 # Set up working directory
 WORKDIR /app
-
-# Create volume mount points
-VOLUME ["/app"]
-
-# Default command - run tests
-CMD ["bash", "-c", "pip install -e . && python -m pytest tests"]

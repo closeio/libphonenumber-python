@@ -16,8 +16,5 @@ if [ $# -eq 0 ]; then
     exit 0
 fi
 
-# Build the Docker image if it doesn't exist
-docker-compose build
-
 # Run the specified command in the Docker container
-docker-compose run --rm phonenumber-py "$@"
+docker-compose run --build --rm phonenumber-py "$@"
