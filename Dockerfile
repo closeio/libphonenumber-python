@@ -27,7 +27,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install Cython and pytest in the virtual environment
 RUN pip install --no-cache-dir Cython pytest
 COPY . /app
-RUN pip install --no-cache-dir -e /app
+RUN pip install --no-cache-dir /app
 
 # Set up working directory
 WORKDIR /app
