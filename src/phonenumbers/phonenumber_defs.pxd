@@ -175,3 +175,7 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         CppMatchType IsNumberMatch(const PhoneNumber& first_number, const PhoneNumber& second_number) const
         CppMatchType IsNumberMatchWithTwoStrings(const string& first_number, const string& second_number) const
         CppMatchType IsNumberMatchWithOneString(const PhoneNumber& first_number, const string& second_number) const
+        
+        # Geographical methods
+        bool IsNumberGeographical(const PhoneNumber& phone_number) const
+        bool IsNumberGeographical(CppPhoneNumberType phone_number_type, int country_calling_code) const

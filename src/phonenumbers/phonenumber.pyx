@@ -1069,6 +1069,38 @@ cdef class PhoneNumberUtil:
             deref(first_phone._phone_number),
             second_number.encode('utf-8')
         )
+    
+    def is_number_geographical(self, number_or_type, country_calling_code=None):
+        """Check if a phone number or number type is geographical.
+        
+        Args:
+            number_or_type: PhoneNumber, FrozenPhoneNumber, or PhoneNumberType
+            country_calling_code: Required if number_or_type is PhoneNumberType
+        
+        Returns:
+            bool: True if the number is geographical, False otherwise
+        """
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef PhoneNumber phone_number
+        
+        if isinstance(number_or_type, (PhoneNumber, FrozenPhoneNumber)):
+            # Convert to PhoneNumber if needed
+            if isinstance(number_or_type, FrozenPhoneNumber):
+                phone_number = number_or_type.to_phone_number()
+            else:
+                phone_number = number_or_type
+            
+            return util.IsNumberGeographical(deref(phone_number._phone_number))
+        
+        elif isinstance(number_or_type, int):
+            # Assume it's a PhoneNumberType
+            if country_calling_code is None:
+                raise ValueError("country_calling_code is required when number_or_type is PhoneNumberType")
+            
+            return util.IsNumberGeographical(<CppPhoneNumberType>number_or_type, country_calling_code)
+        
+        else:
+            raise TypeError("number_or_type must be PhoneNumber, FrozenPhoneNumber, or PhoneNumberType")
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
@@ -1315,3 +1347,15 @@ def is_number_match_with_one_string(first_number, second_number):
         int: MatchType value indicating the type of match
     """
     return _phone_util.is_number_match_with_one_string(first_number, second_number)
+
+def is_number_geographical(number_or_type, country_calling_code=None):
+    """Check if a phone number or number type is geographical.
+    
+    Args:
+        number_or_type: PhoneNumber, FrozenPhoneNumber, or PhoneNumberType
+        country_calling_code: Required if number_or_type is PhoneNumberType
+    
+    Returns:
+        bool: True if the number is geographical, False otherwise
+    """
+    return _phone_util.is_number_geographical(number_or_type, country_calling_code)
