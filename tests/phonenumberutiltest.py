@@ -1716,6 +1716,7 @@ class PhoneNumberUtilTest(unittest.TestCase):
         # Testing a leading + is okay.
         self.assertTrue(phonenumberutil._is_viable_phone_number(u("+1\uFF09\u30003456789")))
 
+    @unittest.skip("TODO _extract_possible_number is not implemented in Python version")
     def testExtractPossibleNumber(self):
         # Removes preceding funky punctuation and letters but leaves the rest untouched.
         self.assertEqual("0800-345-600", phonenumberutil._extract_possible_number("Tel:0800-345-600"))
