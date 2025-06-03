@@ -2,21 +2,25 @@
 
 Python bindings for Google's [libphonenumber](https://github.com/google/libphonenumber) C++ library. These bindings provide a lightweight, high-performance interface to the powerful libphonenumber library for working with international phone numbers.
 
-> **Note:** This package currently provides a pure Python implementation that mimics the libphonenumber API. The C++ bindings are under development. The goal is to provide a seamless transition between the mock implementation and the real C++ bindings.
-
 ## Features
 
 - Parse, format, and validate international phone numbers
 - Determine the type of a phone number (mobile, fixed-line, toll-free, etc.)
 - Get example phone numbers for any country
 - Format numbers for display in different styles (E.164, international, national, RFC3966)
-- Full access to all libphonenumber functionality
+- Check if numbers are possible or valid
+- Get region codes and country calling codes
+- Support for both mutable and immutable phone number objects
 - Fast C++ performance with a clean Python API
 
 ## Implementation Status
 
-- ✅ Pure Python API compatible with libphonenumber functionality
-- 🚧 C++ bindings using Cython (in progress)
+- ✅ C++ bindings using Cython - **Core functionality implemented**
+- ✅ Phone number parsing, formatting, and validation
+- ✅ Number type detection and regional information
+- ✅ Comprehensive enum support (PhoneNumberFormat, PhoneNumberType, etc.)
+- ✅ Both mutable (PhoneNumber) and immutable (FrozenPhoneNumber) objects
+- 🚧 Additional utility functions and edge cases
 - 🔜 Performance optimizations and full test coverage
 
 See [STATUS.md](STATUS.md) for detailed implementation status and next steps.
@@ -46,17 +50,30 @@ We provide a Docker-based development and testing environment that includes all 
 
 #### Running Tests in Docker
 
-All tests should be run inside Docker to ensure a consistent environment. We provide a unified script for running tests:
+All tests should be run inside Docker to ensure a consistent environment. We provide scripts in the `scripts/` directory:
 
 ```bash
-./run-in-docker.sh python -m tests
+# Run all tests
+./scripts/test.sh
+
+# Run a specific test method
+./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest.testGetCountryCodeForRegion
+
+# Run tests with a filter pattern
+./scripts/test.sh -f tests.phonenumberutiltest.PhoneNumberUtilTest.testIsPossibleNumber
 ```
 
 #### Interactive Development with Docker
 
 ```bash
 # Start a shell in the container
-./run-in-docker.sh bash
+./scripts/run.sh bash
+
+# Run any Python command
+./scripts/run.sh python3 -c "import phonenumbers; print(phonenumbers.__version__)"
+
+# Debug mode (supports inspecting headers even if bindings don't compile)
+./scripts/debug.sh bash
 ```
 
 The Docker container mounts your local code as a volume, so any changes you make on your host machine are immediately reflected in the container.
@@ -64,107 +81,144 @@ The Docker container mounts your local code as a volume, so any changes you make
 ## Usage
 
 ```python
-from phonenumber import parse, format_number, PhoneNumberFormat, is_valid_number
+import phonenumbers
 
 # Parse a phone number
-phone = parse("+1 650 253 0000", "US")
+phone = phonenumbers.parse("+1 650 253 0000", "US")
 
 # Format it in different ways
-print(format_number(phone, PhoneNumberFormat.E164))          # +16502530000
-print(format_number(phone, PhoneNumberFormat.INTERNATIONAL))  # +1 650-253-0000
-print(format_number(phone, PhoneNumberFormat.NATIONAL))       # (650) 253-0000
-print(format_number(phone, PhoneNumberFormat.RFC3966))        # tel:+1-650-253-0000
+print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))          # +16502530000
+print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL))  # +1 650-253-0000
+print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.NATIONAL))       # (650) 253-0000
+print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.RFC3966))        # tel:+1-650-253-0000
 
 # Validate a number
-if is_valid_number(phone):
+if phonenumbers.is_valid_number(phone):
     print("Valid number!")
 else:
     print("Invalid number!")
+
+# Check if a number is possible
+if phonenumbers.is_possible_number(phone):
+    print("Number is possible!")
 ```
 
 ### More advanced usage
 
 ```python
-from phonenumber import (
-    PhoneNumberUtil, PhoneNumber, PhoneNumberType, 
-    get_number_type, get_example_number
-)
+import phonenumbers
 
 # Get an example number for a region
-example = get_example_number("GB")  # United Kingdom
+example = phonenumbers.get_example_number("GB")  # United Kingdom
 print(example)  # +44 20 1234 5678 (example)
 
 # Check the type of a number
-mobile = parse("+44 7400 123456", "GB")
-if get_number_type(mobile) == PhoneNumberType.MOBILE:
+mobile = phonenumbers.parse("+44 7400 123456", "GB")
+if phonenumbers.number_type(mobile) == phonenumbers.PhoneNumberType.MOBILE:
     print("This is a mobile number")
 
 # Create a number from scratch
-phone = PhoneNumber()
+phone = phonenumbers.PhoneNumber()
 phone.country_code = 1
 phone.national_number = 6502530000
 print(phone)  # +1 650-253-0000
 
-# Get the PhoneNumberUtil singleton for advanced operations
-util = PhoneNumberUtil()
-region = util.get_region_code_for_number(phone)
+# Get region information
+region = phonenumbers.region_code_for_number(phone)
 print(f"This number is from: {region}")  # US
+
+# Get country calling code for a region
+country_code = phonenumbers.country_code_for_region("US")
+print(f"US country calling code: {country_code}")  # 1
+
+# Create immutable phone numbers
+frozen_phone = phonenumbers.FrozenPhoneNumber(phone)
+print(f"Frozen phone: {frozen_phone}")  # +1 650-253-0000
+
+# Check if a string could be a valid number
+if phonenumbers.is_possible_number_string("+1 555 123 4567", "US"):
+    print("This string could be a valid number")
 ```
 
 ## Development
 
 ### Development Environment
 
-We strongly recommend using Docker for development to ensure a consistent environment. The Docker setup uses Ubuntu 24.04 and Python 3.10+, and automatically installs all dependencies needed for development.
+We strongly recommend using Docker for development to ensure a consistent environment. The Docker setup uses Ubuntu 24.04 and Python 3.12, and automatically installs all dependencies needed for development including:
+
+- libphonenumber C++ library
+- ICU development libraries  
+- Cython for building extensions
+- pytest for testing
 
 #### Setting Up the Development Environment
 
 ```bash
 # Build the Docker image
-docker-compose build
+./scripts/build.sh
 
 # Run an interactive shell
-docker-compose run --rm phonenumber-py bash
+./scripts/run.sh bash
 
 # Run a specific command
-docker-compose run --rm phonenumber-py python3 -c "import phonenumber; print(phonenumber.__version__)"
+./scripts/run.sh python3 -c "import phonenumbers; print(phonenumbers.__version__)"
 ```
 
 #### Test Organization
 
 The tests are organized as follows:
 
-- `tests/test_*.py`: Our custom tests for the package
-- `tests/compat/`: Compatibility layer for running imported tests
 - `tests/*test.py`: Tests imported from python-phonenumbers reference implementation
+- All tests use the unittest framework and test the actual C++ libphonenumber functionality
 
 #### Running Tests
 
-Always use the provided `run_tests.sh` script to run tests in Docker:
+Use the provided scripts to run tests in Docker:
 
 ```bash
 # Run all tests
-./run_tests.sh
+./scripts/test.sh
 
-# Run a specific test class
-./run_tests.sh -m specific phonenumbertest.PhoneNumberTest
+# Run a specific test class  
+./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest
 
-# Run tests in verbose mode
-./run_tests.sh -v
+# Run a specific test method
+./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest.testGetCountryCodeForRegion
 
-# Run tests matching a specific pattern
-./run_tests.sh -k "country_code"
+# Run tests with a filter (use -f flag for specific methods)
+./scripts/test.sh -f tests.phonenumberutiltest.PhoneNumberUtilTest.testIsPossibleNumber
 ```
 
-For more options, run `./run_tests.sh --help`
+#### Debugging
+
+For debugging failed tests or development:
+
+```bash
+# Use debug mode (faster, no rebuild)
+./scripts/debug.sh bash
+
+# Run a single test with verbose output
+./scripts/test.sh -v tests.phonenumberutiltest.PhoneNumberUtilTest.testFormatUSNumber
+
+# Test specific functionality manually
+./scripts/run.sh python3 -c "
+import phonenumbers
+phone = phonenumbers.parse('+1 650 253 0000', 'US')
+print('Valid:', phonenumbers.is_valid_number(phone))
+print('Region:', phonenumbers.region_code_for_number(phone))
+"
+```
 
 ## Roadmap
 
-1. Complete the C++ bindings using Cython
-2. Add full support for all libphonenumber features
-3. Implement performance optimizations
-4. Add comprehensive tests and documentation
-5. Create pre-built wheels for common platforms
+1. ✅ Core C++ bindings using Cython
+2. ✅ Phone number parsing, formatting, and validation
+3. ✅ Regional information and metadata access
+4. 🚧 Complete remaining utility functions (carrier info, timezone, etc.)
+5. 🚧 Additional format functions and specialized number types
+6. 🔜 Performance optimizations and memory usage improvements
+7. 🔜 Comprehensive documentation and examples
+8. 🔜 Create pre-built wheels for common platforms
 
 ## License
 
@@ -174,3 +228,4 @@ Apache License 2.0 - Same as the libphonenumber library.
 
 - Google's [libphonenumber](https://github.com/google/libphonenumber) team for the amazing library
 - This project is not affiliated with or endorsed by Google
+- https://github.com/daviddrysdale/python-phonenumbers/, which this project's interface was developed to match
