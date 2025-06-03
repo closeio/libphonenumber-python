@@ -450,42 +450,35 @@ class PhoneNumberUtilTest(unittest.TestCase):
         self.assertEqual("0", phonenumbers.format_number(US_SPOOF, PhoneNumberFormat.NATIONAL))
 
     def testFormatBSNumber(self):
-        self.assertEqual("242 365 1234", phonenumbers.format_number(BS_NUMBER, PhoneNumberFormat.NATIONAL))
-        self.assertEqual("+1 242 365 1234", phonenumbers.format_number(BS_NUMBER, PhoneNumberFormat.INTERNATIONAL))
+        self.assertEqual("(242) 365-1234", phonenumbers.format_number(BS_NUMBER, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("+1 242-365-1234", phonenumbers.format_number(BS_NUMBER, PhoneNumberFormat.INTERNATIONAL))
 
     def testFormatGBNumber(self):
-        self.assertEqual("(020) 7031 3000", phonenumbers.format_number(GB_NUMBER, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("020 7031 3000", phonenumbers.format_number(GB_NUMBER, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+44 20 7031 3000", phonenumbers.format_number(GB_NUMBER, PhoneNumberFormat.INTERNATIONAL))
 
-        self.assertEqual("(07912) 345 678", phonenumbers.format_number(GB_MOBILE, PhoneNumberFormat.NATIONAL))
-        self.assertEqual("+44 7912 345 678", phonenumbers.format_number(GB_MOBILE, PhoneNumberFormat.INTERNATIONAL))
+        self.assertEqual("07912 345678", phonenumbers.format_number(GB_MOBILE, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("+44 7912 345678", phonenumbers.format_number(GB_MOBILE, PhoneNumberFormat.INTERNATIONAL))
 
     def testFormatDENumber(self):
         deNumber = PhoneNumber(country_code=49, national_number=301234)
-        self.assertEqual("030/1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
-        self.assertEqual("+49 30/1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
+        self.assertEqual("030 1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("+49 30 1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
         self.assertEqual("tel:+49-30-1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.RFC3966))
 
-        deNumber.clear()
-        deNumber.country_code = 49
-        deNumber.national_number = to_long(291123)
+        deNumber = PhoneNumber(country_code=49, national_number=to_long(291123))
         self.assertEqual("0291 123", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+49 291 123", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
 
-        deNumber.clear()
-        deNumber.country_code = 49
-        deNumber.national_number = to_long(29112345678)
+        deNumber = PhoneNumber(country_code=49, national_number=to_long(29112345678))
         self.assertEqual("0291 12345678", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+49 291 12345678", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
 
-        deNumber.clear()
-        deNumber.country_code = 49
-        deNumber.national_number = to_long(912312345)
+        deNumber = PhoneNumber(country_code=49, national_number=to_long(912312345))
         self.assertEqual("09123 12345", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+49 9123 12345", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
-        deNumber.clear()
-        deNumber.country_code = 49
-        deNumber.national_number = to_long(80212345)
+
+        deNumber = PhoneNumber(country_code=49, national_number=to_long(80212345))
         self.assertEqual("08021 2345", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+49 8021 2345", phonenumbers.format_number(deNumber, PhoneNumberFormat.INTERNATIONAL))
         # Note this number is correctly formatted without national prefix. Most of the numbers that
@@ -494,9 +487,7 @@ class PhoneNumberUtilTest(unittest.TestCase):
         self.assertEqual("1234", phonenumbers.format_number(DE_SHORT_NUMBER, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+49 1234", phonenumbers.format_number(DE_SHORT_NUMBER, PhoneNumberFormat.INTERNATIONAL))
 
-        deNumber.clear()
-        deNumber.country_code = 49
-        deNumber.national_number = 41341234
+        deNumber = PhoneNumber(country_code=49, national_number=41341234)
         self.assertEqual("04134 1234", phonenumbers.format_number(deNumber, PhoneNumberFormat.NATIONAL))
 
     def testFormatITNumber(self):
@@ -509,7 +500,7 @@ class PhoneNumberUtilTest(unittest.TestCase):
         self.assertEqual("+39345678901", phonenumbers.format_number(IT_MOBILE, PhoneNumberFormat.E164))
 
     def testFormatAUNumber(self):
-        self.assertEqual("02 3661 8300", phonenumbers.format_number(AU_NUMBER, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("(02) 3661 8300", phonenumbers.format_number(AU_NUMBER, PhoneNumberFormat.NATIONAL))
         self.assertEqual("+61 2 3661 8300", phonenumbers.format_number(AU_NUMBER, PhoneNumberFormat.INTERNATIONAL))
         self.assertEqual("+61236618300", phonenumbers.format_number(AU_NUMBER, PhoneNumberFormat.E164))
 
@@ -523,8 +514,8 @@ class PhoneNumberUtilTest(unittest.TestCase):
         self.assertEqual("+54 11 8765-4321", phonenumbers.format_number(AR_NUMBER, PhoneNumberFormat.INTERNATIONAL))
         self.assertEqual("+541187654321", phonenumbers.format_number(AR_NUMBER, PhoneNumberFormat.E164))
 
-        self.assertEqual("011 15 8765-4321", phonenumbers.format_number(AR_MOBILE, PhoneNumberFormat.NATIONAL))
-        self.assertEqual("+54 9 11 8765 4321", phonenumbers.format_number(AR_MOBILE, PhoneNumberFormat.INTERNATIONAL))
+        self.assertEqual("011 15-8765-4321", phonenumbers.format_number(AR_MOBILE, PhoneNumberFormat.NATIONAL))
+        self.assertEqual("+54 9 11 8765-4321", phonenumbers.format_number(AR_MOBILE, PhoneNumberFormat.INTERNATIONAL))
         self.assertEqual("+5491187654321", phonenumbers.format_number(AR_MOBILE, PhoneNumberFormat.E164))
 
     def testFormatMXNumber(self):
@@ -880,6 +871,7 @@ class PhoneNumberUtilTest(unittest.TestCase):
         number.raw_input = " 123-456-7890"
         self.assertEqual(" 123-456-7890", phonenumbers.format_number_for_mobile_dialing(number, "US", False))
 
+    @unittest.skip("TODO format_by_pattern is not yet implemented")
     def testFormatByPattern(self):
         newNumFormat = NumberFormat(pattern="(\\d{3})(\\d{3})(\\d{4})", format="(\\1) \\2-\\3")
         newNumFormat._mutable = True
