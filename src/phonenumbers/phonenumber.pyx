@@ -1361,6 +1361,17 @@ def region_codes_for_country_calling_code(country_calling_code):
     """Get all region codes for a country calling code."""
     return _phone_util.get_region_codes_for_country_calling_code(country_calling_code)
 
+def region_codes_for_country_code(country_code):
+    """Get all region codes for a country calling code (alias for region_codes_for_country_calling_code)."""
+    return _phone_util.get_region_codes_for_country_calling_code(country_code)
+
+def region_code_for_number(number):
+    """Get the region code for a phone number."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
+    return _phone_util.get_region_code_for_number(number)
+
 # Global geocoder instance - use a pointer since it's not copyable
 cdef PhoneNumberOfflineGeocoder* _geocoder = new PhoneNumberOfflineGeocoder()
 
