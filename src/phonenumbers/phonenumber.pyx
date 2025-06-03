@@ -336,7 +336,19 @@ cdef class PhoneNumber:
         return f"PhoneNumber(country_code={self.country_code}, national_number={self.national_number})"
     
     def __eq__(self, other):
-        if not isinstance(other, PhoneNumber):
+        if isinstance(other, FrozenPhoneNumber):
+            # Simple comparison with FrozenPhoneNumber (no has-state checking)
+            return (
+                self.country_code == other.country_code and
+                self.national_number == other.national_number and
+                self.extension == other.extension and
+                self.italian_leading_zero == other.italian_leading_zero and
+                self.number_of_leading_zeros == other.number_of_leading_zeros and
+                self.raw_input == other.raw_input and
+                self.country_code_source == other.country_code_source and
+                self.preferred_domestic_carrier_code == other.preferred_domestic_carrier_code
+            )
+        elif not isinstance(other, PhoneNumber):
             return False
         
         # Compare basic fields (always required)
@@ -809,7 +821,18 @@ cdef class FrozenPhoneNumber:
         return format_number(temp_number, PhoneNumberFormat.INTERNATIONAL)
     
     def __repr__(self):
-        return f"FrozenPhoneNumber(country_code={self._country_code}, national_number={self._national_number})"
+        extension = None if self._extension == "" else self._extension
+        italian_leading_zero = self._italian_leading_zero
+        number_of_leading_zeros = self._number_of_leading_zeros if self._number_of_leading_zeros != 1 else None
+        preferred_domestic_carrier_code = None if self._preferred_domestic_carrier_code == "" else self._preferred_domestic_carrier_code
+        
+        return (f"FrozenPhoneNumber(country_code={self._country_code}, "
+                f"national_number={self._national_number}, "
+                f"extension={extension}, "
+                f"italian_leading_zero={italian_leading_zero}, "
+                f"number_of_leading_zeros={number_of_leading_zeros}, "
+                f"country_code_source={self._country_code_source}, "
+                f"preferred_domestic_carrier_code={preferred_domestic_carrier_code})")
     
     def __hash__(self):
         return self._hash
