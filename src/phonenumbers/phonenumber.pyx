@@ -942,15 +942,19 @@ cdef class PhoneNumberUtil:
             region_code.encode('utf-8')
         )
     
-    def parse(self, number_to_parse, default_region, keep_raw_input=False):
+    def parse(self, number_to_parse, default_region=None, keep_raw_input=False):
         """Parse a string into a PhoneNumber object."""
         # Handle None inputs
         if number_to_parse is None:
             raise NumberParseException(NumberParseException.NOT_A_NUMBER, 
                                      "The phone number supplied was null.")
+        
+        # Default region can be None if number starts with + (has country code)
+        cdef string region_str
         if default_region is None:
-            raise NumberParseException(NumberParseException.INVALID_COUNTRY_CODE, 
-                                     "Missing or invalid default country.")
+            region_str = b""  # Empty string for None region
+        else:
+            region_str = default_region.encode('utf-8')
         
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
@@ -960,13 +964,13 @@ cdef class PhoneNumberUtil:
         if keep_raw_input:
             error_type = util.ParseAndKeepRawInput(
                 number_to_parse.encode('utf-8'),
-                default_region.encode('utf-8'),
+                region_str,
                 phone_number._phone_number
             )
         else:
             error_type = util.Parse(
                 number_to_parse.encode('utf-8'),
-                default_region.encode('utf-8'),
+                region_str,
                 phone_number._phone_number
             )
         
