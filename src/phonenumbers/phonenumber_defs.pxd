@@ -151,6 +151,7 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         bool IsValidNumber(const PhoneNumber &number) const
         bool IsValidNumberForRegion(const PhoneNumber &number, const string &regionCode) const
         CppErrorType Parse(const string &numberToParse, const string &defaultRegion, PhoneNumber *phoneNumber) const
+        CppErrorType ParseAndKeepRawInput(const string &numberToParse, const string &defaultRegion, PhoneNumber *phoneNumber) const
         CppPhoneNumberType GetNumberType(const PhoneNumber &number) const
         void GetRegionCodeForNumber(const PhoneNumber &number, string *region) const
         bool GetExampleNumber(const string &regionCode, PhoneNumber *number) const

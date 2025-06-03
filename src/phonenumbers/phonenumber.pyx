@@ -915,7 +915,7 @@ cdef class PhoneNumberUtil:
             region_code.encode('utf-8')
         )
     
-    def parse(self, number_to_parse, default_region):
+    def parse(self, number_to_parse, default_region, keep_raw_input=False):
         """Parse a string into a PhoneNumber object."""
         # Handle None inputs
         if number_to_parse is None:
@@ -929,11 +929,19 @@ cdef class PhoneNumberUtil:
         cdef PhoneNumber phone_number = PhoneNumber()
         cdef CppErrorType error_type
         
-        error_type = util.Parse(
-            number_to_parse.encode('utf-8'),
-            default_region.encode('utf-8'),
-            phone_number._phone_number
-        )
+        # Use ParseAndKeepRawInput if keep_raw_input is True
+        if keep_raw_input:
+            error_type = util.ParseAndKeepRawInput(
+                number_to_parse.encode('utf-8'),
+                default_region.encode('utf-8'),
+                phone_number._phone_number
+            )
+        else:
+            error_type = util.Parse(
+                number_to_parse.encode('utf-8'),
+                default_region.encode('utf-8'),
+                phone_number._phone_number
+            )
         
         if error_type != 0:  # ERROR_NO_ERROR = 0
             # Map C++ error types to Python exception error types
@@ -1197,9 +1205,9 @@ cdef class PhoneNumberUtil:
 _phone_util = PhoneNumberUtil()
 
 # Convenience functions
-def parse(number_string, region=None):
+def parse(number_string, region=None, keep_raw_input=False):
     """Parse a phone number string into a PhoneNumber object."""
-    return _phone_util.parse(number_string, region)
+    return _phone_util.parse(number_string, region, keep_raw_input)
 
 def format_number(number, format_type=PhoneNumberFormat.E164):
     """Format a phone number in the specified format."""
@@ -1207,6 +1215,13 @@ def format_number(number, format_type=PhoneNumberFormat.E164):
     if isinstance(number, FrozenPhoneNumber):
         number = number.to_phone_number()
     return _phone_util.format(number, format_type)
+
+def format_in_original_format(number, region_calling_from):
+    """Format a phone number in its original format."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
+    return _phone_util.format_in_original_format(number, region_calling_from)
 
 def is_valid_number(number):
     """Check if a phone number is valid."""
