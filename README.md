@@ -2,6 +2,8 @@
 
 Python bindings for Google's [libphonenumber](https://github.com/google/libphonenumber) C++ library. These bindings provide a lightweight, high-performance interface to the powerful libphonenumber library for working with international phone numbers.
 
+> **⚠️ PROOF OF CONCEPT**: This project is currently in early development. Many tests fail and several modules are missing entirely. This is a work-in-progress implementation that demonstrates the feasibility of Cython bindings for libphonenumber, but is not yet ready for production use.
+
 ## Features
 
 - Parse, format, and validate international phone numbers
@@ -15,13 +17,18 @@ Python bindings for Google's [libphonenumber](https://github.com/google/libphone
 
 ## Implementation Status
 
-- ✅ C++ bindings using Cython - **Core functionality implemented**
-- ✅ Phone number parsing, formatting, and validation
-- ✅ Number type detection and regional information
-- ✅ Comprehensive enum support (PhoneNumberFormat, PhoneNumberType, etc.)
+**Current State: Proof of Concept**
+
+- ✅ Basic C++ bindings using Cython - **Core parsing and formatting works**
+- ✅ Phone number parsing, formatting, and basic validation
+- ✅ Some number type detection and regional information functions
+- ✅ Basic enum support (PhoneNumberFormat, PhoneNumberType, etc.)
 - ✅ Both mutable (PhoneNumber) and immutable (FrozenPhoneNumber) objects
+- ❌ **Many tests fail** - compatibility with python-phonenumbers is incomplete
+- ❌ **Missing modules**: carrier, geocoder, shortnumberinfo, timezone modules not implemented
+- ❌ **Missing functions**: Many utility functions, number matchers, validators not yet bound
 - 🚧 Additional utility functions and edge cases
-- 🔜 Performance optimizations and full test coverage
+- 🔜 Complete test compatibility and missing module implementations
 
 See [STATUS.md](STATUS.md) for detailed implementation status and next steps.
 
@@ -80,6 +87,8 @@ The Docker container mounts your local code as a volume, so any changes you make
 
 ## Usage
 
+> **Note**: These examples show the implemented functionality. Many other functions from python-phonenumbers are not yet implemented and will raise `AttributeError`.
+
 ```python
 import phonenumbers
 
@@ -103,7 +112,7 @@ if phonenumbers.is_possible_number(phone):
     print("Number is possible!")
 ```
 
-### More advanced usage
+### More advanced usage (implemented functions only)
 
 ```python
 import phonenumbers
@@ -140,6 +149,19 @@ if phonenumbers.is_possible_number_string("+1 555 123 4567", "US"):
     print("This string could be a valid number")
 ```
 
+### What's NOT implemented yet
+
+Many functions from python-phonenumbers are not yet available, including:
+
+- `phonenumbers.carrier` module - carrier name lookup
+- parts of `phonenumbers.geocoder` module - geographic location lookup  
+- `phonenumbers.shortnumberinfo` module - short number validation
+- `phonenumbers.timezone` module - timezone information
+- Advanced number matching and comparison functions
+- Many formatting and validation utilities
+- AsYouType formatter
+- And many more...
+
 ## Development
 
 ### Development Environment
@@ -171,23 +193,27 @@ The tests are organized as follows:
 - `tests/*test.py`: Tests imported from python-phonenumbers reference implementation
 - All tests use the unittest framework and test the actual C++ libphonenumber functionality
 
+**⚠️ Important**: Most tests currently fail because many functions are not yet implemented. The test suite serves as a roadmap for what needs to be built.
+
 #### Running Tests
 
 Use the provided scripts to run tests in Docker:
 
 ```bash
-# Run all tests
+# Run all tests (expect many failures)
 ./scripts/test.sh
 
 # Run a specific test class  
 ./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest
 
-# Run a specific test method
+# Run a specific test method (these may work)
 ./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest.testGetCountryCodeForRegion
 
 # Run tests with a filter (use -f flag for specific methods)
 ./scripts/test.sh -f tests.phonenumberutiltest.PhoneNumberUtilTest.testIsPossibleNumber
 ```
+
+**Note**: Many tests will fail with `AttributeError` because the functions are not implemented yet. Focus on individual test methods that correspond to implemented functionality.
 
 #### Debugging
 
@@ -211,14 +237,28 @@ print('Region:', phonenumbers.region_code_for_number(phone))
 
 ## Roadmap
 
-1. ✅ Core C++ bindings using Cython
-2. ✅ Phone number parsing, formatting, and validation
-3. ✅ Regional information and metadata access
-4. 🚧 Complete remaining utility functions (carrier info, timezone, etc.)
-5. 🚧 Additional format functions and specialized number types
-6. 🔜 Performance optimizations and memory usage improvements
-7. 🔜 Comprehensive documentation and examples
-8. 🔜 Create pre-built wheels for common platforms
+**Phase 1: Core Infrastructure (✅ Complete)**
+1. ✅ Basic Cython bindings framework
+2. ✅ Core phone number parsing and formatting
+3. ✅ Basic validation functions
+
+**Phase 2: Essential Functions (🚧 In Progress)**
+4. 🚧 Complete all PhoneNumberUtil methods
+5. 🚧 Implement missing validation and formatting functions
+6. 🚧 Add number matching and comparison functions
+7. 🚧 Fix failing tests from python-phonenumbers test suite
+
+**Phase 3: Additional Modules (🔜 Future)**
+8. 🔜 carrier module - carrier name lookup
+9. 🔜 geocoder module - geographic location information
+10. 🔜 shortnumberinfo module - short number validation
+11. 🔜 timezone module - timezone information
+12. 🔜 AsYouType formatter
+
+**Phase 4: Polish and Performance (🔜 Future)**
+13. 🔜 Performance optimizations and memory usage improvements
+14. 🔜 Comprehensive documentation and examples
+15. 🔜 Create pre-built wheels for common platforms
 
 ## License
 
