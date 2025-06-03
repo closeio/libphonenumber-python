@@ -18,6 +18,7 @@
 # limitations under the License.
 import sys
 import pickle
+import unittest
 
 import phonenumbers
 from phonenumbers import PhoneNumber, PhoneMetadata
@@ -29,7 +30,6 @@ from phonenumbers import region_code_for_country_code, MatchType
 from phonenumbers import phonenumberutil, shortnumberinfo
 from phonenumbers.phonenumberutil import NumberParseException
 from phonenumbers.util import u, to_long
-from .testmetadatatest import TestMetadataTestCase
 
 
 # Set up some test numbers to re-use.
@@ -79,7 +79,7 @@ UNKNOWN_COUNTRY_CODE_NO_RAW_INPUT = FrozenPhoneNumber(country_code=2, national_n
 XY_NUMBER = FrozenPhoneNumber(country_code=999, national_number=1234567890)
 
 
-class PhoneNumberUtilTest(TestMetadataTestCase):
+class PhoneNumberUtilTest(unittest.TestCase):
     """Unit tests for phonenumbers/__init__.py
 
     Note that these tests use the test metadata, not the normal metadata file,
