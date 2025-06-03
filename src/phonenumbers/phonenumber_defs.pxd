@@ -169,6 +169,7 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         void GetSupportedTypesForRegion(const string& region_code, cppset[CppPhoneNumberType]* types) const
         
         # Region code methods
+        int GetCountryCodeForRegion(const string& region_code) const
         void GetRegionCodeForCountryCode(int country_code, string* region_code) const
         void GetRegionCodesForCountryCallingCode(int country_calling_code, cpplist[string]* region_codes) const
         

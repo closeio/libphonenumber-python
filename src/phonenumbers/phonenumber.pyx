@@ -1117,6 +1117,24 @@ cdef class PhoneNumberUtil:
             postinc(it)  # Use pre-increment operator
         return py_types
     
+    def get_country_code_for_region(self, region_code):
+        """Get the country calling code for a region."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        if region_code is None:
+            return 0
+        return util.GetCountryCodeForRegion(region_code.encode('utf-8'))
+    
+    def get_country_code_for_valid_region(self, region_code):
+        """Get the country calling code for a valid region (throws exception for invalid regions)."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        if region_code is None:
+            raise Exception("Region code cannot be None")
+        
+        cdef int country_code = util.GetCountryCodeForRegion(region_code.encode('utf-8'))
+        if country_code == 0:
+            raise Exception(f"Invalid region code: {region_code}")
+        return country_code
+    
     def get_region_code_for_country_code(self, country_code):
         """Get the primary region code for a country calling code."""
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
@@ -1326,6 +1344,14 @@ def get_supported_types_for_region(region_code):
 def get_metadata_for_region(region_code):
     """Get phone metadata for a specific region."""
     return PhoneMetadata(region_code)
+
+def country_code_for_region(region_code):
+    """Get the country calling code for a region."""
+    return _phone_util.get_country_code_for_region(region_code)
+
+def country_code_for_valid_region(region_code):
+    """Get the country calling code for a valid region (throws exception for invalid regions)."""
+    return _phone_util.get_country_code_for_valid_region(region_code)
 
 def region_code_for_country_code(country_code):
     """Get the primary region code for a country calling code."""
