@@ -99,6 +99,20 @@ class PhoneNumberFormat:
     INTERNATIONAL = CppPhoneNumberFormat.FORMAT_INTERNATIONAL
     NATIONAL = CppPhoneNumberFormat.FORMAT_NATIONAL
     RFC3966 = CppPhoneNumberFormat.FORMAT_RFC3966
+    
+    @classmethod
+    def to_string(cls, format_type):
+        """Convert a PhoneNumberFormat enum value to its string name."""
+        format_map = {
+            cls.E164: "E164",
+            cls.INTERNATIONAL: "INTERNATIONAL", 
+            cls.NATIONAL: "NATIONAL",
+            cls.RFC3966: "RFC3966"
+        }
+        if format_type in format_map:
+            return format_map[format_type]
+        else:
+            return f"INVALID ({format_type})"
 
 class PhoneNumberType:
     """Phone number type."""
@@ -114,6 +128,28 @@ class PhoneNumberType:
     UAN = CppPhoneNumberType.TYPE_UAN
     VOICEMAIL = CppPhoneNumberType.TYPE_VOICEMAIL
     UNKNOWN = CppPhoneNumberType.TYPE_UNKNOWN
+    
+    @classmethod
+    def to_string(cls, number_type):
+        """Convert a PhoneNumberType enum value to its string name."""
+        type_map = {
+            cls.FIXED_LINE: "FIXED_LINE",
+            cls.MOBILE: "MOBILE",
+            cls.FIXED_LINE_OR_MOBILE: "FIXED_LINE_OR_MOBILE",
+            cls.TOLL_FREE: "TOLL_FREE",
+            cls.PREMIUM_RATE: "PREMIUM_RATE",
+            cls.SHARED_COST: "SHARED_COST",
+            cls.VOIP: "VOIP",
+            cls.PERSONAL_NUMBER: "PERSONAL_NUMBER",
+            cls.PAGER: "PAGER",
+            cls.UAN: "UAN",
+            cls.VOICEMAIL: "VOICEMAIL",
+            cls.UNKNOWN: "UNKNOWN"
+        }
+        if number_type in type_map:
+            return type_map[number_type]
+        else:
+            return f"INVALID ({number_type})"
 
 class CountryCodeSource:
     """Country code source."""
@@ -122,6 +158,21 @@ class CountryCodeSource:
     FROM_NUMBER_WITH_IDD = CppCountryCodeSource.SOURCE_FROM_NUMBER_WITH_IDD
     FROM_NUMBER_WITHOUT_PLUS_SIGN = CppCountryCodeSource.SOURCE_FROM_NUMBER_WITHOUT_PLUS_SIGN
     FROM_DEFAULT_COUNTRY = CppCountryCodeSource.SOURCE_FROM_DEFAULT_COUNTRY
+    
+    @classmethod
+    def to_string(cls, source_type):
+        """Convert a CountryCodeSource enum value to its string name."""
+        source_map = {
+            cls.UNSPECIFIED: "UNSPECIFIED",
+            cls.FROM_NUMBER_WITH_PLUS_SIGN: "FROM_NUMBER_WITH_PLUS_SIGN",
+            cls.FROM_NUMBER_WITH_IDD: "FROM_NUMBER_WITH_IDD",
+            cls.FROM_NUMBER_WITHOUT_PLUS_SIGN: "FROM_NUMBER_WITHOUT_PLUS_SIGN",
+            cls.FROM_DEFAULT_COUNTRY: "FROM_DEFAULT_COUNTRY"
+        }
+        if source_type in source_map:
+            return source_map[source_type]
+        else:
+            return f"INVALID ({source_type})"
 
 class ValidationResult:
     """Validation result."""
@@ -131,14 +182,46 @@ class ValidationResult:
     TOO_SHORT = CppValidationResult.RESULT_TOO_SHORT
     INVALID_LENGTH = CppValidationResult.RESULT_INVALID_LENGTH
     TOO_LONG = CppValidationResult.RESULT_TOO_LONG
+    
+    @classmethod
+    def to_string(cls, result_type):
+        """Convert a ValidationResult enum value to its string name."""
+        result_map = {
+            cls.IS_POSSIBLE: "IS_POSSIBLE",
+            cls.IS_POSSIBLE_LOCAL_ONLY: "IS_POSSIBLE_LOCAL_ONLY",
+            cls.INVALID_COUNTRY_CODE: "INVALID_COUNTRY_CODE",
+            cls.TOO_SHORT: "TOO_SHORT",
+            cls.INVALID_LENGTH: "INVALID_LENGTH",
+            cls.TOO_LONG: "TOO_LONG"
+        }
+        if result_type in result_map:
+            return result_map[result_type]
+        else:
+            return f"INVALID ({result_type})"
 
 class MatchType:
     """Types of phone number matches."""
     INVALID_NUMBER = CppMatchType.MATCH_INVALID_NUMBER
+    NOT_A_NUMBER = CppMatchType.MATCH_INVALID_NUMBER  # Alias for compatibility
     NO_MATCH = CppMatchType.MATCH_NO_MATCH
     SHORT_NSN_MATCH = CppMatchType.MATCH_SHORT_NSN_MATCH
     NSN_MATCH = CppMatchType.MATCH_NSN_MATCH
     EXACT_MATCH = CppMatchType.MATCH_EXACT_MATCH
+    
+    @classmethod
+    def to_string(cls, match_type):
+        """Convert a MatchType enum value to its string name."""
+        match_map = {
+            cls.INVALID_NUMBER: "NOT_A_NUMBER",  # Use the expected name
+            cls.NO_MATCH: "NO_MATCH",
+            cls.SHORT_NSN_MATCH: "SHORT_NSN_MATCH",
+            cls.NSN_MATCH: "NSN_MATCH",
+            cls.EXACT_MATCH: "EXACT_MATCH"
+        }
+        if match_type in match_map:
+            return match_map[match_type]
+        else:
+            return f"INVALID ({match_type})"
 
 # Phone number class
 cdef class PhoneNumber:
