@@ -1,8 +1,21 @@
 services:
+  phonenumber-py-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    # By default, just show a message about using the test script
+    command: >
+      bash -c "echo 'Please specify a command'"
   phonenumber-py:
     build:
       context: .
       dockerfile: Dockerfile
+      target: app
     volumes:
       - .:/app
     environment:

@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS base
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     python3-full \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+FROM base AS app
 
 # Create and activate a virtual environment
 RUN python3 -m venv /opt/venv
