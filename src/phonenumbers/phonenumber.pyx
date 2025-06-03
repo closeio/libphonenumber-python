@@ -576,7 +576,7 @@ cdef class PhoneMetadata:
         else:
             parsed_number = phone_number
         
-        return get_number_type(parsed_number)
+        return number_type(parsed_number)
     
     def __str__(self):
         return f"PhoneMetadata(region='{self._region_code}', country_code={self._country_code})"
@@ -1121,7 +1121,7 @@ def is_valid_number(number):
     """Check if a phone number is valid."""
     return _phone_util.is_valid_number(number)
 
-def get_number_type(number):
+def number_type(number):
     """Get the type of a phone number."""
     return _phone_util.get_number_type(number)
 
@@ -1152,7 +1152,7 @@ def is_valid_frozen_number(frozen_number):
 def get_frozen_number_type(frozen_number):
     """Get the type of a frozen phone number."""
     mutable_number = frozen_number.to_phone_number()
-    return get_number_type(mutable_number)
+    return number_type(mutable_number)
 
 def get_example_frozen_number(region_code):
     """Get an example frozen phone number for a region."""
