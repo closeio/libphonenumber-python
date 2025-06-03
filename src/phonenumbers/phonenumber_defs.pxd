@@ -81,6 +81,14 @@ cdef extern from * namespace "":
         SOURCE_FROM_NUMBER_WITHOUT_PLUS_SIGN "i18n::phonenumbers::PhoneNumber_CountryCodeSource_FROM_NUMBER_WITHOUT_PLUS_SIGN" = 10
         SOURCE_FROM_DEFAULT_COUNTRY "i18n::phonenumbers::PhoneNumber_CountryCodeSource_FROM_DEFAULT_COUNTRY" = 20
 
+    # Match type for phone number comparison
+    cdef enum CppMatchType "i18n::phonenumbers::PhoneNumberUtil::MatchType":
+        MATCH_INVALID_NUMBER "i18n::phonenumbers::PhoneNumberUtil::INVALID_NUMBER" = 0
+        MATCH_NO_MATCH "i18n::phonenumbers::PhoneNumberUtil::NO_MATCH" = 1
+        MATCH_SHORT_NSN_MATCH "i18n::phonenumbers::PhoneNumberUtil::SHORT_NSN_MATCH" = 2
+        MATCH_NSN_MATCH "i18n::phonenumbers::PhoneNumberUtil::NSN_MATCH" = 3
+        MATCH_EXACT_MATCH "i18n::phonenumbers::PhoneNumberUtil::EXACT_MATCH" = 4
+
 cdef extern from "phonenumbers/phonemetadata.pb.h" namespace "i18n::phonenumbers":
     cdef cppclass NumberFormat:
         NumberFormat()
@@ -162,3 +170,8 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         # Region code methods
         void GetRegionCodeForCountryCode(int country_code, string* region_code) const
         void GetRegionCodesForCountryCallingCode(int country_calling_code, cpplist[string]* region_codes) const
+        
+        # Match type methods
+        CppMatchType IsNumberMatch(const PhoneNumber& first_number, const PhoneNumber& second_number) const
+        CppMatchType IsNumberMatchWithTwoStrings(const string& first_number, const string& second_number) const
+        CppMatchType IsNumberMatchWithOneString(const PhoneNumber& first_number, const string& second_number) const

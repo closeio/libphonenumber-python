@@ -23,6 +23,7 @@ from .phonenumber_defs cimport (
     CppCountryCodeSource,
     CppValidationResult,
     CppErrorType,
+    CppMatchType,
 )
 
 # Geocoder support
@@ -130,6 +131,14 @@ class ValidationResult:
     TOO_SHORT = CppValidationResult.RESULT_TOO_SHORT
     INVALID_LENGTH = CppValidationResult.RESULT_INVALID_LENGTH
     TOO_LONG = CppValidationResult.RESULT_TOO_LONG
+
+class MatchType:
+    """Types of phone number matches."""
+    INVALID_NUMBER = CppMatchType.MATCH_INVALID_NUMBER
+    NO_MATCH = CppMatchType.MATCH_NO_MATCH
+    SHORT_NSN_MATCH = CppMatchType.MATCH_SHORT_NSN_MATCH
+    NSN_MATCH = CppMatchType.MATCH_NSN_MATCH
+    EXACT_MATCH = CppMatchType.MATCH_EXACT_MATCH
 
 # Phone number class
 cdef class PhoneNumber:
@@ -1004,6 +1013,62 @@ cdef class PhoneNumberUtil:
             py_codes.append(deref(it).decode('utf-8'))
             postinc(it)
         return py_codes
+    
+    def is_number_match(self, first_number, second_number):
+        """Compare two phone numbers for equality."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef PhoneNumber first_phone
+        cdef PhoneNumber second_phone
+        
+        # Convert inputs to PhoneNumber objects if needed
+        if isinstance(first_number, str):
+            first_phone = self.parse(first_number, "US")  # Default region
+        elif isinstance(first_number, (PhoneNumber, FrozenPhoneNumber)):
+            if isinstance(first_number, FrozenPhoneNumber):
+                first_phone = first_number.to_phone_number()
+            else:
+                first_phone = first_number
+        else:
+            raise TypeError("first_number must be a string or PhoneNumber")
+        
+        if isinstance(second_number, str):
+            second_phone = self.parse(second_number, "US")  # Default region
+        elif isinstance(second_number, (PhoneNumber, FrozenPhoneNumber)):
+            if isinstance(second_number, FrozenPhoneNumber):
+                second_phone = second_number.to_phone_number()
+            else:
+                second_phone = second_number
+        else:
+            raise TypeError("second_number must be a string or PhoneNumber")
+        
+        return util.IsNumberMatch(deref(first_phone._phone_number), deref(second_phone._phone_number))
+    
+    def is_number_match_with_two_strings(self, first_number, second_number):
+        """Compare two phone number strings for equality."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsNumberMatchWithTwoStrings(
+            first_number.encode('utf-8'),
+            second_number.encode('utf-8')
+        )
+    
+    def is_number_match_with_one_string(self, first_number, second_number):
+        """Compare a PhoneNumber with a phone number string."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        cdef PhoneNumber first_phone
+        
+        # Convert first number to PhoneNumber if needed
+        if isinstance(first_number, (PhoneNumber, FrozenPhoneNumber)):
+            if isinstance(first_number, FrozenPhoneNumber):
+                first_phone = first_number.to_phone_number()
+            else:
+                first_phone = first_number
+        else:
+            raise TypeError("first_number must be a PhoneNumber or FrozenPhoneNumber")
+        
+        return util.IsNumberMatchWithOneString(
+            deref(first_phone._phone_number),
+            second_number.encode('utf-8')
+        )
 
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
@@ -1213,3 +1278,40 @@ def country_name_for_number(number, language="en"):
     
     # Use the region-aware geocoding to get a more focused description
     return description_for_number(number, language, region_code)
+
+# Number matching convenience functions
+def is_number_match(first_number, second_number):
+    """Compare two phone numbers for equality.
+    
+    Args:
+        first_number: PhoneNumber, FrozenPhoneNumber, or string
+        second_number: PhoneNumber, FrozenPhoneNumber, or string
+    
+    Returns:
+        int: MatchType value indicating the type of match
+    """
+    return _phone_util.is_number_match(first_number, second_number)
+
+def is_number_match_with_two_strings(first_number, second_number):
+    """Compare two phone number strings for equality.
+    
+    Args:
+        first_number: String representation of a phone number
+        second_number: String representation of a phone number
+    
+    Returns:
+        int: MatchType value indicating the type of match
+    """
+    return _phone_util.is_number_match_with_two_strings(first_number, second_number)
+
+def is_number_match_with_one_string(first_number, second_number):
+    """Compare a PhoneNumber with a phone number string.
+    
+    Args:
+        first_number: PhoneNumber or FrozenPhoneNumber object
+        second_number: String representation of a phone number
+    
+    Returns:
+        int: MatchType value indicating the type of match
+    """
+    return _phone_util.is_number_match_with_one_string(first_number, second_number)
