@@ -917,6 +917,14 @@ cdef class PhoneNumberUtil:
     
     def parse(self, number_to_parse, default_region):
         """Parse a string into a PhoneNumber object."""
+        # Handle None inputs
+        if number_to_parse is None:
+            raise NumberParseException(NumberParseException.NOT_A_NUMBER, 
+                                     "The phone number supplied was null.")
+        if default_region is None:
+            raise NumberParseException(NumberParseException.INVALID_COUNTRY_CODE, 
+                                     "Missing or invalid default country.")
+        
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         cdef PhoneNumber phone_number = PhoneNumber()
         cdef CppErrorType error_type
@@ -1191,21 +1199,27 @@ _phone_util = PhoneNumberUtil()
 # Convenience functions
 def parse(number_string, region=None):
     """Parse a phone number string into a PhoneNumber object."""
-    if region is None:
-        # Default to US if no region specified
-        region = "US"
     return _phone_util.parse(number_string, region)
 
 def format_number(number, format_type=PhoneNumberFormat.E164):
     """Format a phone number in the specified format."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
     return _phone_util.format(number, format_type)
 
 def is_valid_number(number):
     """Check if a phone number is valid."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
     return _phone_util.is_valid_number(number)
 
 def number_type(number):
     """Get the type of a phone number."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
     return _phone_util.get_number_type(number)
 
 def get_example_number(region_code):
