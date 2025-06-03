@@ -369,8 +369,12 @@ cdef class PhoneNumber:
     
     def merge_from(self, other):
         """Merge all fields from another PhoneNumber into this one."""
-        if not isinstance(other, PhoneNumber):
-            raise TypeError("Can only merge from another PhoneNumber")
+        # Handle both PhoneNumber and FrozenPhoneNumber
+        if isinstance(other, FrozenPhoneNumber):
+            other = other.to_phone_number()
+        elif not isinstance(other, PhoneNumber):
+            raise TypeError("Can only merge from another PhoneNumber or FrozenPhoneNumber")
+        
         self.country_code = other.country_code
         self.national_number = other.national_number
         self.extension = other.extension
@@ -1222,6 +1226,14 @@ def format_in_original_format(number, region_calling_from):
     if isinstance(number, FrozenPhoneNumber):
         number = number.to_phone_number()
     return _phone_util.format_in_original_format(number, region_calling_from)
+
+def format_out_of_country_calling_number(number, region_calling_from):
+    """Format a phone number for out-of-country calling."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
+    return _phone_util.format_out_of_country_calling_number(number, region_calling_from)
+
 
 def is_valid_number(number):
     """Check if a phone number is valid."""
