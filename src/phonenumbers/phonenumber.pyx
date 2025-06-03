@@ -1060,6 +1060,19 @@ cdef class PhoneNumberUtil:
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
         return util.IsPossibleNumberWithReason(deref(number._phone_number))
     
+    def is_possible_number(self, PhoneNumber number):
+        """Check if a number is possible."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsPossibleNumber(deref(number._phone_number))
+    
+    def is_possible_number_string(self, number_string, region_dialing_from):
+        """Check if a number string is possible."""
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        return util.IsPossibleNumberForString(
+            number_string.encode('utf-8'),
+            region_dialing_from.encode('utf-8')
+        )
+    
     def truncate_too_long_number(self, PhoneNumber number):
         """Truncate a too-long number."""
         cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
@@ -1282,6 +1295,17 @@ def is_valid_number(number):
     if isinstance(number, FrozenPhoneNumber):
         number = number.to_phone_number()
     return _phone_util.is_valid_number(number)
+
+def is_possible_number(number):
+    """Check if a phone number is possible."""
+    # Handle both PhoneNumber and FrozenPhoneNumber
+    if isinstance(number, FrozenPhoneNumber):
+        number = number.to_phone_number()
+    return _phone_util.is_possible_number(number)
+
+def is_possible_number_string(number_string, region_dialing_from):
+    """Check if a number string is possible."""
+    return _phone_util.is_possible_number_string(number_string, region_dialing_from)
 
 def number_type(number):
     """Get the type of a phone number."""

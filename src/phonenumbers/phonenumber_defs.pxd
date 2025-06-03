@@ -160,6 +160,8 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         void FormatOutOfCountryCallingNumber(const PhoneNumber &number, const string &regionCallingFrom, string *formattedNumber) const
         void GetNationalSignificantNumber(const PhoneNumber &number, string *nationalNumber) const
         CppValidationResult IsPossibleNumberWithReason(const PhoneNumber &number) const
+        bool IsPossibleNumber(const PhoneNumber &number) const
+        bool IsPossibleNumberForString(const string& number, const string& region_dialing_from) const
         bool TruncateTooLongNumber(PhoneNumber *number) const
         
         # Public metadata-related methods
