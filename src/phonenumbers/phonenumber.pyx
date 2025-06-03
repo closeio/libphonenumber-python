@@ -24,6 +24,9 @@ from .phonenumber_defs cimport (
     CppValidationResult,
     CppErrorType,
     CppMatchType,
+    CppLeniency,
+    PhoneNumberMatch as CppPhoneNumberMatch,
+    PhoneNumberMatcher as CppPhoneNumberMatcher,
 )
 
 # Geocoder support
@@ -223,6 +226,27 @@ class MatchType:
         else:
             return f"INVALID ({match_type})"
 
+class Leniency:
+    """Leniency levels for phone number matching in text."""
+    POSSIBLE = CppLeniency.LENIENCY_POSSIBLE
+    VALID = CppLeniency.LENIENCY_VALID  
+    STRICT_GROUPING = CppLeniency.LENIENCY_STRICT_GROUPING
+    EXACT_GROUPING = CppLeniency.LENIENCY_EXACT_GROUPING
+    
+    @classmethod
+    def to_string(cls, leniency_type):
+        """Convert a Leniency enum value to its string name."""
+        leniency_map = {
+            cls.POSSIBLE: "POSSIBLE",
+            cls.VALID: "VALID",
+            cls.STRICT_GROUPING: "STRICT_GROUPING",
+            cls.EXACT_GROUPING: "EXACT_GROUPING"
+        }
+        if leniency_type in leniency_map:
+            return leniency_map[leniency_type]
+        else:
+            return f"INVALID ({leniency_type})"
+
 # Phone number class
 cdef class PhoneNumber:
     """
@@ -333,7 +357,17 @@ cdef class PhoneNumber:
         return format_number(self, PhoneNumberFormat.INTERNATIONAL)
     
     def __repr__(self):
-        return f"PhoneNumber(country_code={self.country_code}, national_number={self.national_number})"
+        # For test compatibility, show None for unset fields
+        cc = None if self.country_code == 0 else self.country_code
+        nn = None if self.national_number == 0 else self.national_number
+        ext = None if self.extension == "" else self.extension
+        ilz = None if not self._has_italian_leading_zero() else self.italian_leading_zero
+        nlz = None if not self._has_number_of_leading_zeros() else self.number_of_leading_zeros
+        pdcc = None if self.preferred_domestic_carrier_code == "" else self.preferred_domestic_carrier_code
+        
+        return (f"PhoneNumber(country_code={cc}, national_number={nn}, extension={ext}, "
+                f"italian_leading_zero={ilz}, number_of_leading_zeros={nlz}, "
+                f"country_code_source={self.country_code_source}, preferred_domestic_carrier_code={pdcc})")
     
     def __eq__(self, other):
         if isinstance(other, FrozenPhoneNumber):
@@ -1263,6 +1297,171 @@ cdef class PhoneNumberUtil:
         else:
             raise TypeError("number_or_type must be PhoneNumber, FrozenPhoneNumber, or PhoneNumberType")
 
+# PhoneNumberMatch class
+cdef class PhoneNumberMatch:
+    """
+    A match found by PhoneNumberMatcher.
+    Contains the phone number found, and the start and end offsets in the searched text.
+    """
+    cdef PhoneNumber _number
+    cdef int _start
+    cdef int _end
+    cdef str _raw_string
+    
+    def __init__(self, start, raw_string, number):
+        """Create a PhoneNumberMatch with the specified start, raw_string and number.
+        
+        Args:
+            start: The start index of the match
+            raw_string: The raw text that was matched
+            number: The PhoneNumber object that was parsed
+        """
+        if start < 0:
+            raise ValueError("Start index must be >= 0")
+        if raw_string is None:
+            raise ValueError("Raw string cannot be None")
+        if number is None:
+            raise ValueError("Number cannot be None")
+            
+        self._start = start
+        self._end = start + len(raw_string)
+        self._raw_string = raw_string
+        self._number = number
+    
+    @property
+    def number(self):
+        """The phone number found in the text."""
+        return self._number
+    
+    @property
+    def start(self):
+        """Start offset of the match in the text."""
+        return self._start
+    
+    @property
+    def end(self):
+        """End offset of the match in the text."""
+        return self._end
+    
+    @property
+    def raw_string(self):
+        """The raw text that was matched."""
+        return self._raw_string
+    
+    def __str__(self):
+        return f"PhoneNumberMatch [{self.start},{self.end}) {self.raw_string}"
+    
+    def __repr__(self):
+        return f"PhoneNumberMatch(start={self.start}, raw_string='{self.raw_string}', numobj={repr(self.number)})"
+        
+    def __eq__(self, other):
+        """Test equality based on start, end, raw_string and number."""
+        if not isinstance(other, PhoneNumberMatch):
+            return False
+        return (self.start == other.start and 
+                self.end == other.end and 
+                self.raw_string == other.raw_string and 
+                self.number == other.number)
+    
+    def __ne__(self, other):
+        """Test inequality."""
+        return not self.__eq__(other)
+
+
+# PhoneNumberMatcher class
+cdef class PhoneNumberMatcher:
+    """
+    A matcher for phone numbers in text.
+    Finds phone numbers in arbitrary text and returns PhoneNumberMatch objects.
+    """
+    cdef CppPhoneNumberMatcher* _cpp_matcher
+    cdef str _text
+    cdef str _region
+    cdef int _leniency
+    cdef int _max_tries
+    
+    def __cinit__(self, text, region, leniency=None, max_tries=65536):
+        """
+        Initialize a phone number matcher.
+        
+        Args:
+            text: The text to search for phone numbers
+            region: The default region to use for phone number parsing  
+            leniency: The leniency level for matching (default: Leniency.VALID)
+            max_tries: Maximum number of attempts (default: 65536)
+        """
+        if leniency is None:
+            leniency = Leniency.VALID
+            
+        # Handle None inputs
+        if text is None:
+            text = ""
+        if region is None:
+            region = ""
+            
+        self._text = text
+        self._region = region
+        self._leniency = leniency
+        self._max_tries = max_tries
+        
+        # Create the C++ matcher - use the advanced constructor with PhoneNumberUtil
+        cdef CppPhoneNumberUtil* util = CppPhoneNumberUtil.GetInstance()
+        self._cpp_matcher = new CppPhoneNumberMatcher(
+            deref(util),
+            text.encode('utf-8'),
+            region.encode('utf-8'),
+            <CppLeniency>leniency,
+            max_tries
+        )
+    
+    def __dealloc__(self):
+        if self._cpp_matcher:
+            del self._cpp_matcher
+    
+    def __iter__(self):
+        """Make this object iterable."""
+        return self
+    
+    def __next__(self):
+        """Get the next phone number match."""
+        if not self._cpp_matcher.HasNext():
+            raise StopIteration
+        
+        cdef CppPhoneNumberMatch cpp_match
+        cdef bool success = self._cpp_matcher.Next(&cpp_match)
+        if not success:
+            raise StopIteration
+            
+        return self._create_phone_number_match_with_text(&cpp_match)
+    
+    def has_next(self):
+        """Check if there are more matches."""
+        return self._cpp_matcher.HasNext()
+    
+    def next(self):
+        """Get the next match (for compatibility)."""
+        return self.__next__()
+    
+    cdef PhoneNumberMatch _create_phone_number_match_with_text(self, CppPhoneNumberMatch* cpp_match):
+        """Create a PhoneNumberMatch object with proper Unicode position handling."""
+        # Extract values from C++ object
+        cdef CppPhoneNumber cpp_number = cpp_match.number()
+        cdef PhoneNumber python_number = PhoneNumber()
+        python_number._phone_number[0] = cpp_number
+        
+        cdef int byte_start = cpp_match.start()
+        cdef int byte_end = cpp_match.end()
+        cdef str raw_string = cpp_match.raw_string().decode('utf-8')
+        
+        # Convert byte positions to character positions
+        cdef bytes text_bytes = self._text.encode('utf-8')
+        cdef str text_up_to_start = text_bytes[:byte_start].decode('utf-8')
+        cdef int char_start = len(text_up_to_start)
+        cdef int char_end = char_start + len(raw_string)
+        
+        # Create the match object
+        return PhoneNumberMatch(char_start, raw_string, python_number)
+
 # Singleton instance of PhoneNumberUtil
 _phone_util = PhoneNumberUtil()
 
@@ -1571,3 +1770,32 @@ def is_number_geographical(number_or_type, country_calling_code=None):
         bool: True if the number is geographical, False otherwise
     """
     return _phone_util.is_number_geographical(number_or_type, country_calling_code)
+
+# PhoneNumberMatcher convenience functions
+def find_numbers(text, region, leniency=None, max_tries=65536):
+    """Find phone numbers in text.
+    
+    Args:
+        text: The text to search for phone numbers
+        region: The default region to use for phone number parsing
+        leniency: The leniency level for matching (default: Leniency.VALID)
+        max_tries: Maximum number of attempts (default: 65536)
+    
+    Returns:
+        Generator yielding PhoneNumberMatch objects
+    """
+    matcher = PhoneNumberMatcher(text, region, leniency, max_tries)
+    return matcher
+
+def find_phone_numbers_in_text(text, region, leniency=None):
+    """Find phone numbers in text and return them as a list.
+    
+    Args:
+        text: The text to search for phone numbers
+        region: The default region to use for phone number parsing
+        leniency: The leniency level for matching (default: Leniency.VALID)
+    
+    Returns:
+        List of PhoneNumberMatch objects
+    """
+    return list(find_numbers(text, region, leniency))

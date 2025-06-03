@@ -183,3 +183,25 @@ cdef extern from "phonenumbers/phonenumberutil.h" namespace "i18n::phonenumbers"
         # Geographical methods
         bool IsNumberGeographical(const PhoneNumber& phone_number) const
         bool IsNumberGeographical(CppPhoneNumberType phone_number_type, int country_calling_code) const
+
+cdef extern from "phonenumbers/phonenumbermatch.h" namespace "i18n::phonenumbers":
+    cdef cppclass PhoneNumberMatch:
+        PhoneNumberMatch()
+        PhoneNumber number()
+        int start()
+        int end()
+        string raw_string()
+
+cdef extern from "phonenumbers/phonenumbermatcher.h" namespace "i18n::phonenumbers":
+    # Leniency enum for phone number matching
+    cdef enum CppLeniency "i18n::phonenumbers::PhoneNumberMatcher::Leniency":
+        LENIENCY_POSSIBLE "i18n::phonenumbers::PhoneNumberMatcher::POSSIBLE" = 0
+        LENIENCY_VALID "i18n::phonenumbers::PhoneNumberMatcher::VALID" = 1
+        LENIENCY_STRICT_GROUPING "i18n::phonenumbers::PhoneNumberMatcher::STRICT_GROUPING" = 2
+        LENIENCY_EXACT_GROUPING "i18n::phonenumbers::PhoneNumberMatcher::EXACT_GROUPING" = 3
+
+    cdef cppclass PhoneNumberMatcher:
+        PhoneNumberMatcher(const string& text, const string& region) except +
+        PhoneNumberMatcher(const PhoneNumberUtil& util, const string& text, const string& region, CppLeniency leniency, uint64_t max_tries) except +
+        bool HasNext()
+        bool Next(PhoneNumberMatch* match)
