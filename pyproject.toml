@@ -7,7 +7,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "phonenumber-py"
+name = "phonenumbers"
 version = "0.1.0"
 description = "Python bindings for Google's libphonenumber library"
 authors = [
