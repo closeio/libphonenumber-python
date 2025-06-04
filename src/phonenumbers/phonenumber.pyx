@@ -1597,7 +1597,9 @@ def region_code_for_number(number):
     # Handle both PhoneNumber and FrozenPhoneNumber
     if isinstance(number, FrozenPhoneNumber):
         number = number.to_phone_number()
-    return _phone_util.get_region_code_for_number(number)
+    region = _phone_util.get_region_code_for_number(number)
+    # Match original Python phonenumbers library behavior: return None for unknown regions
+    return None if region == "ZZ" else region
 
 # Global geocoder instance - use a pointer since it's not copyable
 cdef PhoneNumberOfflineGeocoder* _geocoder = new PhoneNumberOfflineGeocoder()
