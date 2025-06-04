@@ -27,8 +27,8 @@ FROM base AS app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Cython and pytest in the virtual environment
-RUN pip install --no-cache-dir Cython pytest
+# Install Cython, pytest, and mypy in the virtual environment
+RUN pip install --no-cache-dir Cython pytest mypy
 COPY . /app
 RUN pip install --no-cache-dir /app
 

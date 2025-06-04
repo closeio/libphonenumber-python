@@ -31,3 +31,6 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/yourusername/libphonenumber-bindings"
 "Bug Tracker" = "https://github.com/yourusername/libphonenumber-bindings/issues"
+
+[tool.setuptools.package-data]
+phonenumbers = ["py.typed", "*.pyi"]

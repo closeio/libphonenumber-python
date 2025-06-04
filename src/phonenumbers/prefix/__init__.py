@@ -5,7 +5,7 @@ This module provides functions to get descriptions for phone numbers based on
 prefix matching with localization support.
 """
 
-from ..phonenumber import format_number, PhoneNumberFormat
+from .. import format_number, PhoneNumberFormat
 
 # Constants
 U_PLUS = "+"
