@@ -22,13 +22,14 @@ parts/
 sdist/
 var/
 wheels/
+wheelhouse/
 *.egg-info/
 .installed.cfg
 *.egg
 
-# Cython generated files
-*.cpp
+# Generated native sources and downloaded build inputs
 *.c
+vendor/*.tar.gz
 
 # PyInstaller
 *.manifest

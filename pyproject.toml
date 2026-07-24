@@ -1,36 +1,79 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel",
-    "cython>=0.29.0",
+  "pybind11>=2.13.6,<3",
+  "scikit-build-core>=0.10.7,<1",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "scikit_build_core.build"
 
 [project]
-name = "phonenumbers"
-version = "10.1.0"
-description = "Python bindings for Google's libphonenumber library"
-authors = [
-    {name = "Alec", email = "example@example.com"}
-]
+name = "closeio-phonenumbers"
+version = "9.0.34.1"
+description = "Low-memory Python bindings for Google's libphonenumber"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.13"
 license = {file = "LICENSE"}
+authors = [
+  {name = "Close", email = "engineering@close.com"},
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "Topic :: Communications :: Telephony",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Communications :: Telephony",
+  "Typing :: Typed",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/libphonenumber-bindings"
-"Bug Tracker" = "https://github.com/yourusername/libphonenumber-bindings/issues"
+Homepage = "https://github.com/closeio/libphonenumber-python"
+Issues = "https://github.com/closeio/libphonenumber-python/issues"
 
-[tool.setuptools.package-data]
-phonenumbers = ["py.typed", "*.pyi"]
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+cmake.build-type = "Release"
+minimum-version = "build-system.requires"
+sdist.exclude = ["build", "dist", "wheelhouse", ".git"]
+sdist.include = [
+  "vendor/abseil-cpp-273292d.tar.gz",
+  "vendor/libphonenumber-9.0.34.tar.gz",
+]
+wheel.packages = ["src/phonenumbers"]
+
+[tool.cibuildwheel]
+build = ["cp312-manylinux*", "cp312-macosx*"]
+skip = ["*-manylinux_i686", "*-musllinux*"]
+test-command = "pytest {project}/tests"
+test-requires = ["pytest>=8,<10"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+before-all = "dnf install -y libicu-devel protobuf-compiler protobuf-devel"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+before-all = "brew install icu4c pkg-config protobuf"
+
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "15.0"
+CMAKE_PREFIX_PATH = "$(brew --prefix icu4c):$(brew --prefix protobuf)"
+PKG_CONFIG_PATH = "$(brew --prefix icu4c)/lib/pkgconfig:$(brew --prefix protobuf)/lib/pkgconfig"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]

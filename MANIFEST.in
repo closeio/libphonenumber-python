@@ -1,6 +1,0 @@
-include LICENSE
-include README.md
-include CMakeLists.txt
-include src/phonenumbers/*.pyx
-include src/phonenumbers/*.pxd
-recursive-include tests *.py

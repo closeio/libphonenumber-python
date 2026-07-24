@@ -1,271 +1,100 @@
-# Python Bindings for libphonenumber
+# closeio-phonenumbers
 
-Python bindings for Google's [libphonenumber](https://github.com/google/libphonenumber) C++ library. These bindings provide a lightweight, high-performance interface to the powerful libphonenumber library for working with international phone numbers.
+Low-memory Python bindings for Google's C++
+[libphonenumber](https://github.com/google/libphonenumber). The installed
+module is named `phonenumbers`, so the Close application can migrate without
+rewriting its phone-number call sites.
 
-> **⚠️ PROOF OF CONCEPT**: This project is currently in early development. Many tests fail and several modules are missing entirely. This is a work-in-progress implementation that demonstrates the feasibility of Cython bindings for libphonenumber, but is not yet ready for production use.
+This project intentionally targets the API surface used by Close and
+`tz-trout`; it is not yet a complete replacement for the upstream pure-Python
+`phonenumbers` package. See [STATUS.md](STATUS.md) for the compatibility matrix
+and the plan for expanding parity.
 
-## Features
+## Why the C++ implementation
 
-- Parse, format, and validate international phone numbers
-- Determine the type of a phone number (mobile, fixed-line, toll-free, etc.)
-- Get example phone numbers for any country
-- Format numbers for display in different styles (E.164, international, national, RFC3966)
-- Check if numbers are possible or valid
-- Get region codes and country calling codes
-- Support for both mutable and immutable phone number objects
-- Fast C++ performance with a clean Python API
+Close uses parsing, formatting, validation, matching, offline geocoding, and
+phone-prefix timezone lookup. The Rust `phonenumber` crate only implements the
+core parsing and validation subset. It has neither geocoder data nor timezone
+data, so Rust bindings would require two additional data implementations and
+would not deliver a single low-memory replacement.
 
-## Implementation Status
+The C++ port provides the core implementation, matcher, and offline geocoder.
+This package adds the missing timezone mapper using Google's pinned 86 KB
+prefix map. The map is loaded lazily and occupies a small fraction of the
+memory used by the pure-Python geocoder objects.
 
-**Current State: Proof of Concept**
+## Reproducibility
 
-- ✅ Basic C++ bindings using Cython - **Core parsing and formatting works**
-- ✅ Phone number parsing, formatting, and basic validation
-- ✅ Some number type detection and regional information functions
-- ✅ Basic enum support (PhoneNumberFormat, PhoneNumberType, etc.)
-- ✅ Both mutable (PhoneNumber) and immutable (FrozenPhoneNumber) objects
-- ❌ **Many tests fail** - compatibility with python-phonenumbers is incomplete
-- ❌ **Missing modules**: carrier, geocoder, shortnumberinfo, timezone modules not implemented
-- ❌ **Missing functions**: Many utility functions, number matchers, validators not yet bound
-- 🚧 Additional utility functions and edge cases
-- 🔜 Complete test compatibility and missing module implementations
+Version `9.0.34.1` means binding revision 1 over libphonenumber metadata
+`9.0.34`. CMake verifies pinned archives for that release and its fallback
+Abseil revision. Both archives are included in the sdist, so an sdist build
+needs no network once its declared build and system dependencies are installed.
+Linux uses the pinned Abseil fallback; macOS uses the ABI-compatible Abseil
+installed with Homebrew's Protobuf. `auditwheel` or `delocate` bundles remaining
+non-system native libraries into each wheel, so target systems do not install
+`libphonenumber-dev`, ICU or Protobuf development packages, or a compiler.
 
-See [STATUS.md](STATUS.md) for detailed implementation status and next steps.
+The package distribution is named `closeio-phonenumbers` because the
+`phonenumbers` project name is owned on PyPI. It still installs the
+`phonenumbers` import package. Do not install it alongside the pure-Python
+`phonenumbers` distribution.
 
-## Installation
+## Supported artifacts
 
-### Prerequisites
+Release tags build and publish wheels for:
 
-- Python 3.10 or later
+- CPython 3.12
+- Linux x86-64 and ARM64 (manylinux 2.28 or newer)
+- macOS 15 or newer, on x86-64 and Apple Silicon
 
-### Install from source
-
-```bash
-# Clone and install the package
-git clone https://github.com/yourusername/libphonenumber-bindings.git
-cd libphonenumber-bindings
-pip install -e .
-```
-
-### Using Docker
-
-We provide a Docker-based development and testing environment that includes all necessary dependencies.
-
-#### Prerequisites for Docker
-- Docker
-- Docker Compose
-
-#### Running Tests in Docker
-
-All tests should be run inside Docker to ensure a consistent environment. We provide scripts in the `scripts/` directory:
-
-```bash
-# Run all tests
-./scripts/test.sh
-
-# Run a specific test method
-./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest.testGetCountryCodeForRegion
-
-# Run tests with a filter pattern
-./scripts/test.sh -f tests.phonenumberutiltest.PhoneNumberUtilTest.testIsPossibleNumber
-```
-
-#### Interactive Development with Docker
-
-```bash
-# Start a shell in the container
-./scripts/run.sh bash
-
-# Run any Python command
-./scripts/run.sh python3 -c "import phonenumbers; print(phonenumbers.__version__)"
-
-# Debug mode (supports inspecting headers even if bindings don't compile)
-./scripts/debug.sh bash
-```
-
-The Docker container mounts your local code as a volume, so any changes you make on your host machine are immediately reflected in the container.
+This is the current Close production and development runtime. Add and test a
+new wheel target before changing Close's Python version or supported platform.
 
 ## Usage
 
-> **Note**: These examples show the implemented functionality. Many other functions from python-phonenumbers are not yet implemented and will raise `AttributeError`.
-
 ```python
 import phonenumbers
+from phonenumbers import geocoder, timezone
 
-# Parse a phone number
-phone = phonenumbers.parse("+1 650 253 0000", "US")
+number = phonenumbers.parse("+1 415-333-4444")
 
-# Format it in different ways
-print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))          # +16502530000
-print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.INTERNATIONAL))  # +1 650-253-0000
-print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.NATIONAL))       # (650) 253-0000
-print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.RFC3966))        # tel:+1-650-253-0000
+phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.E164)
+# "+14153334444"
 
-# Validate a number
-if phonenumbers.is_valid_number(phone):
-    print("Valid number!")
-else:
-    print("Invalid number!")
+geocoder.description_for_number(number, "en")
+# "San Francisco, CA"
 
-# Check if a number is possible
-if phonenumbers.is_possible_number(phone):
-    print("Number is possible!")
+timezone.time_zones_for_number(number)
+# ("America/Los_Angeles",)
 ```
 
-### More advanced usage (implemented functions only)
+## Local build
 
-```python
-import phonenumbers
-
-# Get an example number for a region
-example = phonenumbers.get_example_number("GB")  # United Kingdom
-print(example)  # +44 20 1234 5678 (example)
-
-# Check the type of a number
-mobile = phonenumbers.parse("+44 7400 123456", "GB")
-if phonenumbers.number_type(mobile) == phonenumbers.PhoneNumberType.MOBILE:
-    print("This is a mobile number")
-
-# Create a number from scratch
-phone = phonenumbers.PhoneNumber()
-phone.country_code = 1
-phone.national_number = 6502530000
-print(phone)  # +1 650-253-0000
-
-# Get region information
-region = phonenumbers.region_code_for_number(phone)
-print(f"This number is from: {region}")  # US
-
-# Get country calling code for a region
-country_code = phonenumbers.country_code_for_region("US")
-print(f"US country calling code: {country_code}")  # 1
-
-# Create immutable phone numbers
-frozen_phone = phonenumbers.FrozenPhoneNumber(phone)
-print(f"Frozen phone: {frozen_phone}")  # +1 650-253-0000
-
-# Check if a string could be a valid number
-if phonenumbers.is_possible_number_string("+1 555 123 4567", "US"):
-    print("This string could be a valid number")
-```
-
-### What's NOT implemented yet
-
-Many functions from python-phonenumbers are not yet available, including:
-
-- `phonenumbers.carrier` module - carrier name lookup
-- parts of `phonenumbers.geocoder` module - geographic location lookup  
-- `phonenumbers.shortnumberinfo` module - short number validation
-- `phonenumbers.timezone` module - timezone information
-- Advanced number matching and comparison functions
-- Many formatting and validation utilities
-- AsYouType formatter
-- And many more...
-
-## Development
-
-### Development Environment
-
-We strongly recommend using Docker for development to ensure a consistent environment. The Docker setup uses Ubuntu 24.04 and Python 3.12, and automatically installs all dependencies needed for development including:
-
-- libphonenumber C++ library
-- ICU development libraries  
-- Cython for building extensions
-- pytest for testing
-
-#### Setting Up the Development Environment
+A source build requires a C++17 compiler, CMake, Ninja, ICU development
+headers, Protocol Buffers headers, and `protoc`. On Ubuntu:
 
 ```bash
-# Build the Docker image
-./scripts/build.sh
-
-# Run an interactive shell
-./scripts/run.sh bash
-
-# Run a specific command
-./scripts/run.sh python3 -c "import phonenumbers; print(phonenumbers.__version__)"
+sudo apt-get install \
+  build-essential libicu-dev libprotobuf-dev protobuf-compiler
+python tools/fetch_libphonenumber.py
+python -m pip install build
+python -m build --wheel
+python -m pip install dist/*.whl
+pytest
 ```
 
-#### Test Organization
-
-The tests are organized as follows:
-
-- `tests/*test.py`: Tests imported from python-phonenumbers reference implementation
-- All tests use the unittest framework and test the actual C++ libphonenumber functionality
-
-**⚠️ Important**: Most tests currently fail because many functions are not yet implemented. The test suite serves as a roadmap for what needs to be built.
-
-#### Running Tests
-
-Use the provided scripts to run tests in Docker:
+On macOS, install the native dependencies with Homebrew:
 
 ```bash
-# Run all tests (expect many failures)
-./scripts/test.sh
-
-# Run a specific test class  
-./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest
-
-# Run a specific test method (these may work)
-./scripts/test.sh tests.phonenumberutiltest.PhoneNumberUtilTest.testGetCountryCodeForRegion
-
-# Run tests with a filter (use -f flag for specific methods)
-./scripts/test.sh -f tests.phonenumberutiltest.PhoneNumberUtilTest.testIsPossibleNumber
+brew install icu4c pkg-config protobuf
+export CMAKE_PREFIX_PATH="$(brew --prefix icu4c):$(brew --prefix protobuf)"
+export PKG_CONFIG_PATH="$(brew --prefix icu4c)/lib/pkgconfig:$(brew --prefix protobuf)/lib/pkgconfig"
+python tools/fetch_libphonenumber.py
+python -m pip install build
+python -m build --wheel
+python -m pip install dist/*.whl
+pytest
 ```
 
-**Note**: Many tests will fail with `AttributeError` because the functions are not implemented yet. Focus on individual test methods that correspond to implemented functionality.
-
-#### Debugging
-
-For debugging failed tests or development:
-
-```bash
-# Use debug mode (faster, no rebuild)
-./scripts/debug.sh bash
-
-# Run a single test with verbose output
-./scripts/test.sh -v tests.phonenumberutiltest.PhoneNumberUtilTest.testFormatUSNumber
-
-# Test specific functionality manually
-./scripts/run.sh python3 -c "
-import phonenumbers
-phone = phonenumbers.parse('+1 650 253 0000', 'US')
-print('Valid:', phonenumbers.is_valid_number(phone))
-print('Region:', phonenumbers.region_code_for_number(phone))
-"
-```
-
-## Roadmap
-
-**Phase 1: Core Infrastructure (✅ Complete)**
-1. ✅ Basic Cython bindings framework
-2. ✅ Core phone number parsing and formatting
-3. ✅ Basic validation functions
-
-**Phase 2: Essential Functions (🚧 In Progress)**
-4. 🚧 Complete all PhoneNumberUtil methods
-5. 🚧 Implement missing validation and formatting functions
-6. 🚧 Add number matching and comparison functions
-7. 🚧 Fix failing tests from python-phonenumbers test suite
-
-**Phase 3: Additional Modules (🔜 Future)**
-8. 🔜 carrier module - carrier name lookup
-9. 🔜 geocoder module - geographic location information
-10. 🔜 shortnumberinfo module - short number validation
-11. 🔜 timezone module - timezone information
-12. 🔜 AsYouType formatter
-
-**Phase 4: Polish and Performance (🔜 Future)**
-13. 🔜 Performance optimizations and memory usage improvements
-14. 🔜 Comprehensive documentation and examples
-15. 🔜 Create pre-built wheels for common platforms
-
-## License
-
-Apache License 2.0 - Same as the libphonenumber library.
-
-## Credits
-
-- Google's [libphonenumber](https://github.com/google/libphonenumber) team for the amazing library
-- This project is not affiliated with or endorsed by Google
-- https://github.com/daviddrysdale/python-phonenumbers/, which this project's interface was developed to match
+Use `python -m cibuildwheel --platform linux` or `--platform macos` to
+produce the same repaired wheels as CI.
