@@ -12,6 +12,7 @@ description = "Low-memory Python bindings for Google's libphonenumber"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = {file = "LICENSE"}
+keywords = ["libphonenumber", "phone", "phonenumber", "telephony"]
 authors = [
   {name = "Close", email = "engineering@close.com"},
 ]
@@ -29,11 +30,19 @@ classifiers = [
 ]
 
 [project.urls]
+Documentation = "https://github.com/closeio/libphonenumber-python#readme"
 Homepage = "https://github.com/closeio/libphonenumber-python"
 Issues = "https://github.com/closeio/libphonenumber-python/issues"
+Source = "https://github.com/closeio/libphonenumber-python"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
+dev = [
+  "build>=1,<2",
+  "mypy==2.3.0",
+  "pytest>=8,<10",
+  "ruff==0.15.17",
+]
 
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"

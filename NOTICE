@@ -1,0 +1,14 @@
+closeio-phonenumbers
+Copyright 2023-2026 The Authors
+
+This product includes software developed by the libphonenumber project
+(https://github.com/google/libphonenumber) and the Abseil project
+(https://github.com/abseil/abseil-cpp), both licensed under the Apache License
+2.0.
+
+The packaged phone-number, geocoding, and timezone metadata is derived from
+Google's libphonenumber project.
+
+Binary distributions may include ICU (https://icu.unicode.org/) and Protocol
+Buffers (https://github.com/protocolbuffers/protobuf). Their respective
+copyright and license terms continue to apply.

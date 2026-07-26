@@ -120,10 +120,10 @@ def test_parse_format_region_and_validation_contract(
             "+55 86 99567-2691",
         ),
         (
-            "+1 (833) Go-CLosE",
+            "+1 (800) FLOWERS",
             None,
             phonenumbers.PhoneNumberFormat.E164,
-            "+18334625673",
+            "+18003569377",
         ),
         (
             "+14153456789x123",
