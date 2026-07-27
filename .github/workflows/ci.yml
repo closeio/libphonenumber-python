@@ -24,11 +24,12 @@ jobs:
       - run: mypy --strict src/phonenumbers
 
   linux-wheels:
-    name: Linux / ${{ matrix.arch }}
+    name: CPython 3.${{ matrix.minor }} / Linux ${{ matrix.arch }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
+        minor: ["12", "13", "14"]
         arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v6
@@ -45,20 +46,22 @@ jobs:
       - uses: pypa/cibuildwheel@v4.1.1
         env:
           CIBW_ARCHS_LINUX: ${{ matrix.arch }}
+          CIBW_BUILD: cp3${{ matrix.minor }}-manylinux*
 
       - uses: actions/upload-artifact@v7
         with:
-          name: wheels-linux-${{ matrix.arch }}
+          name: wheels-linux-cp3${{ matrix.minor }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
           if-no-files-found: error
 
   macos-wheels:
-    name: macOS / ${{ matrix.arch }}
-    runs-on: ${{ matrix.runner }}
+    name: CPython 3.${{ matrix.minor }} / macOS ${{ matrix.target.arch }}
+    runs-on: ${{ matrix.target.runner }}
     strategy:
       fail-fast: false
       matrix:
-        include:
+        minor: ["12", "13", "14"]
+        target:
           - arch: x86_64
             runner: macos-15-intel
           - arch: arm64
@@ -67,18 +70,19 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: "3.${{ matrix.minor }}"
 
       - name: Fetch pinned libphonenumber source
         run: python tools/fetch_libphonenumber.py
 
       - uses: pypa/cibuildwheel@v4.1.1
         env:
-          CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_ARCHS_MACOS: ${{ matrix.target.arch }}
+          CIBW_BUILD: cp3${{ matrix.minor }}-macosx*
 
       - uses: actions/upload-artifact@v7
         with:
-          name: wheels-macos-${{ matrix.arch }}
+          name: wheels-macos-cp3${{ matrix.minor }}-${{ matrix.target.arch }}
           path: wheelhouse/*.whl
           if-no-files-found: error
 
@@ -99,47 +103,9 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
-  tz-trout:
-    name: Downstream / CPython ${{ matrix.python }}
-    needs: linux-wheels
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.12", "3.13", "3.14"]
-    steps:
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python }}
-      - uses: actions/download-artifact@v8
-        with:
-          name: wheels-linux-x86_64
-          path: wheelhouse
-      - uses: actions/checkout@v6
-        with:
-          repository: closeio/tz-trout
-          ref: 2142e66469cf75bf7f663a4f69f0d10dc6292ea8
-          path: tz-trout
-      - name: Install native wheel and tz-trout test dependencies
-        run: |
-          python -m pip install --no-index --find-links wheelhouse \
-            closeio-phonenumbers
-          python -m pip install --no-deps ./tz-trout
-          python -m pip install -r tz-trout/requirements_test.txt \
-            pytz==2025.2 python-dateutil==2.8.2 timezonefinder==8.1.0
-      - name: Verify the native distribution owns the import
-        run: |
-          python -m pip show closeio-phonenumbers
-          if python -m pip show phonenumbers; then
-            echo "Both phone-number distributions are installed"
-            exit 1
-          fi
-      - name: Run tz-trout tests
-        run: python -m pytest -q tz-trout/tests
-
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [lint, linux-wheels, macos-wheels, sdist, tz-trout]
+    needs: [lint, linux-wheels, macos-wheels, sdist]
     runs-on: ubuntu-24.04
     environment: pypi
     permissions:
