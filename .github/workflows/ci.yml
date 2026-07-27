@@ -24,7 +24,7 @@ jobs:
       - run: mypy --strict src/phonenumbers
 
   linux-wheels:
-    name: CPython 3.12 / Linux ${{ matrix.arch }}
+    name: Linux / ${{ matrix.arch }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -42,7 +42,7 @@ jobs:
       - name: Fetch pinned libphonenumber source
         run: python tools/fetch_libphonenumber.py
 
-      - uses: pypa/cibuildwheel@v3.1.4
+      - uses: pypa/cibuildwheel@v4.1.1
         env:
           CIBW_ARCHS_LINUX: ${{ matrix.arch }}
 
@@ -53,7 +53,7 @@ jobs:
           if-no-files-found: error
 
   macos-wheels:
-    name: CPython 3.12 / macOS ${{ matrix.arch }}
+    name: macOS / ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -72,7 +72,7 @@ jobs:
       - name: Fetch pinned libphonenumber source
         run: python tools/fetch_libphonenumber.py
 
-      - uses: pypa/cibuildwheel@v3.1.4
+      - uses: pypa/cibuildwheel@v4.1.1
         env:
           CIBW_ARCHS_MACOS: ${{ matrix.arch }}
 
@@ -100,13 +100,17 @@ jobs:
           if-no-files-found: error
 
   tz-trout:
-    name: tz-trout compatibility
+    name: Downstream / CPython ${{ matrix.python }}
     needs: linux-wheels
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
       - uses: actions/download-artifact@v8
         with:
           name: wheels-linux-x86_64
@@ -118,7 +122,8 @@ jobs:
           path: tz-trout
       - name: Install native wheel and tz-trout test dependencies
         run: |
-          python -m pip install wheelhouse/*.whl
+          python -m pip install --no-index --find-links wheelhouse \
+            closeio-phonenumbers
           python -m pip install --no-deps ./tz-trout
           python -m pip install -r tz-trout/requirements_test.txt \
             pytz==2025.2 python-dateutil==2.8.2 timezonefinder==8.1.0
@@ -152,5 +157,5 @@ jobs:
       - name: Verify release artifacts
         run: |
           test -f "dist/closeio_phonenumbers-${GITHUB_REF_NAME#v}.tar.gz"
-          test "$(find dist -maxdepth 1 -name '*.whl' | wc -l)" -eq 4
+          test "$(find dist -maxdepth 1 -name '*.whl' | wc -l)" -eq 12
       - uses: pypa/gh-action-pypi-publish@release/v1

@@ -39,8 +39,8 @@ Prebuilt wheels are available for the following targets:
 
 | Python | Platform | Architectures |
 | --- | --- | --- |
-| CPython 3.12 | Linux (manylinux 2.28+) | x86-64, ARM64 |
-| CPython 3.12 | macOS 15+ | x86-64, Apple Silicon |
+| CPython 3.12–3.14 | Linux (manylinux 2.28+) | x86-64, ARM64 |
+| CPython 3.12–3.14 | macOS 15+ | x86-64, Apple Silicon |
 
 Installing a wheel does not require a compiler or ICU, Protobuf, or
 libphonenumber development packages.
@@ -90,7 +90,7 @@ libphonenumber release.
 
 ## Building from source
 
-A source build requires Python 3.12, a C++17 compiler, CMake, Ninja, ICU
+A source build requires Python 3.12–3.14, a C++17 compiler, CMake, Ninja, ICU
 development headers, Protocol Buffers headers, and `protoc`. A Git checkout
 also needs the pinned source archives; a source distribution already includes
 them.

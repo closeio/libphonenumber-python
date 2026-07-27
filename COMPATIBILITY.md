@@ -78,8 +78,8 @@ Published artifacts target:
 
 | Python | Operating system | Architectures |
 | --- | --- | --- |
-| CPython 3.12 | Linux (manylinux 2.28+) | x86-64, ARM64 |
-| CPython 3.12 | macOS 15+ | x86-64, Apple Silicon |
+| CPython 3.12–3.14 | Linux (manylinux 2.28+) | x86-64, ARM64 |
+| CPython 3.12–3.14 | macOS 15+ | x86-64, Apple Silicon |
 
 Other Python versions, operating systems, and architectures are unsupported
 unless built from source and validated independently.
