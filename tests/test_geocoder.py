@@ -45,3 +45,38 @@ def test_invalid_number_has_no_description():
     number = phonenumbers.parse("+11111111111")
 
     assert geocoder.description_for_number(number, "en") == ""
+
+
+def test_iter_prefix_descriptions_is_lazy():
+    descriptions = geocoder.iter_prefix_descriptions("en")
+
+    assert iter(descriptions) is descriptions
+    assert next(descriptions) == ("1201", "New Jersey")
+
+
+def test_iter_prefix_descriptions_filters_calling_code_and_length():
+    descriptions = dict(
+        geocoder.iter_prefix_descriptions(
+            "en", calling_code=1, max_prefix_length=4
+        )
+    )
+
+    assert descriptions["1307"] == "Wyoming"
+    assert descriptions["1415"] == "California"
+    assert "1307232" not in descriptions
+    assert all(len(prefix) <= 4 for prefix in descriptions)
+    assert list(descriptions) == sorted(descriptions, key=int)
+
+
+def test_iter_prefix_descriptions_preserves_language_tag():
+    descriptions = dict(
+        geocoder.iter_prefix_descriptions(
+            "zh_Hant", calling_code=886, max_prefix_length=4
+        )
+    )
+
+    assert descriptions["8862"] == "臺北"
+
+
+def test_iter_prefix_descriptions_unknown_language_is_empty():
+    assert list(geocoder.iter_prefix_descriptions("not-a-language")) == []

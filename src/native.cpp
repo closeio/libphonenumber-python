@@ -5,11 +5,13 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <unicode/locid.h>
 
+#include "phonenumbers/geocoding/geocoding_data.h"
 #include "phonenumbers/geocoding/phonenumber_offline_geocoder.h"
 #include "phonenumbers/phonenumber.pb.h"
 #include "phonenumbers/phonenumbermatch.h"
@@ -273,6 +275,95 @@ std::string description_for_number(
   }
   return geocoder().GetDescriptionForNumber(number, locale);
 }
+
+int decimal_digits(std::int32_t value) {
+  int digits = 1;
+  while (value >= 10) {
+    value /= 10;
+    ++digits;
+  }
+  return digits;
+}
+
+class PrefixDescriptionIterator {
+ public:
+  PrefixDescriptionIterator(
+      std::string language,
+      std::optional<int> calling_code,
+      std::optional<int> max_prefix_length)
+      : language_(std::move(language)),
+        calling_code_(calling_code),
+        max_prefix_length_(max_prefix_length) {}
+
+  py::tuple Next() {
+    while (true) {
+      if (descriptions_ == nullptr && !SelectNextPair()) {
+        throw py::stop_iteration();
+      }
+
+      while (description_index_ < descriptions_->prefixes_size) {
+        const int index = description_index_++;
+        const std::int32_t prefix = descriptions_->prefixes[index];
+        if (max_prefix_length_ &&
+            decimal_digits(prefix) > *max_prefix_length_) {
+          FinishPair();
+          break;
+        }
+        return py::make_tuple(
+            std::to_string(prefix), descriptions_->descriptions[index]);
+      }
+
+      if (descriptions_ != nullptr) {
+        FinishPair();
+      }
+    }
+  }
+
+ private:
+  bool SelectNextPair() {
+    const char** pairs =
+        i18n::phonenumbers::get_prefix_language_code_pairs();
+    const int pair_count =
+        i18n::phonenumbers::get_prefix_language_code_pairs_size();
+
+    while (pair_index_ < pair_count) {
+      const std::string pair(pairs[pair_index_]);
+      const std::size_t separator = pair.find('_');
+      if (separator == std::string::npos) {
+        ++pair_index_;
+        continue;
+      }
+
+      const int pair_calling_code =
+          std::stoi(pair.substr(0, separator));
+      const std::string pair_language = pair.substr(separator + 1);
+      if ((calling_code_ && *calling_code_ != pair_calling_code) ||
+          pair_language != language_) {
+        ++pair_index_;
+        continue;
+      }
+
+      descriptions_ =
+          i18n::phonenumbers::get_prefix_descriptions(pair_index_);
+      description_index_ = 0;
+      return true;
+    }
+    return false;
+  }
+
+  void FinishPair() {
+    descriptions_ = nullptr;
+    description_index_ = 0;
+    ++pair_index_;
+  }
+
+  std::string language_;
+  std::optional<int> calling_code_;
+  std::optional<int> max_prefix_length_;
+  int pair_index_ = 0;
+  int description_index_ = 0;
+  const i18n::phonenumbers::PrefixDescriptions* descriptions_ = nullptr;
+};
 
 void set_optional_int(
     py::object value,
@@ -561,4 +652,23 @@ PYBIND11_MODULE(_native, module) {
       py::arg("script") = py::none(),
       py::arg("region") = py::none(),
       py::arg("assume_valid") = false);
+  py::class_<PrefixDescriptionIterator>(
+      module, "_PrefixDescriptionIterator")
+      .def(
+          "__iter__",
+          [](PrefixDescriptionIterator& iterator)
+              -> PrefixDescriptionIterator& { return iterator; },
+          py::return_value_policy::reference)
+      .def("__next__", &PrefixDescriptionIterator::Next);
+  module.def(
+      "iter_prefix_descriptions",
+      [](const std::string& language,
+         const std::optional<int>& calling_code,
+         const std::optional<int>& max_prefix_length) {
+        return PrefixDescriptionIterator(
+            language, calling_code, max_prefix_length);
+      },
+      py::arg("language"),
+      py::arg("calling_code") = py::none(),
+      py::arg("max_prefix_length") = py::none());
 }

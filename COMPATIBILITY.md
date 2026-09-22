@@ -40,9 +40,13 @@ The `phonenumbers.geocoder` module provides:
 - `description_for_number`
 - `description_for_valid_number`
 - `country_name_for_number`
+- `iter_prefix_descriptions`
 
 Descriptions are resolved offline using metadata compiled from the pinned
-libphonenumber release. The geocoder is loaded only when imported.
+libphonenumber release. `iter_prefix_descriptions` streams the same compiled
+prefix metadata without materializing the full data set as Python objects. It
+supports exact language, calling-code, and maximum-prefix-length filters. The
+geocoder is loaded only when imported.
 
 ## Timezone lookup
 

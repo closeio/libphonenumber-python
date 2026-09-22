@@ -7,7 +7,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "closeio-phonenumbers"
-version = "9.0.34.1"
+version = "9.0.34.2"
 description = "Low-memory Python bindings for Google's libphonenumber"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
