@@ -13,6 +13,9 @@ from phonenumbers import geocoder
         ("+442071838750", "en", "London"),
         ("+493028181234", "en", "Berlin"),
         ("+5586995672691", "en", "Piauí"),
+        ("+33105123456", "en", "Ile de France"),
+        ("+3726123456", "en", "Tallinn/Harju County"),
+        ("+6043812345", "en", "Penang"),
     ],
 )
 def test_description_for_number(value, language, description):
@@ -66,6 +69,24 @@ def test_iter_prefix_descriptions_filters_calling_code_and_length():
     assert "1307232" not in descriptions
     assert all(len(prefix) <= 4 for prefix in descriptions)
     assert list(descriptions) == sorted(descriptions, key=int)
+
+
+@pytest.mark.parametrize(
+    ("calling_code", "prefix", "description"),
+    [
+        (33, "33105", "Ile de France"),
+        (372, "3726", "Tallinn/Harju County"),
+        (60, "60438", "Penang"),
+    ],
+)
+def test_iter_prefix_descriptions_has_python_geocoder_coverage(
+    calling_code, prefix, description
+):
+    descriptions = dict(
+        geocoder.iter_prefix_descriptions("en", calling_code=calling_code)
+    )
+
+    assert descriptions[prefix] == description
 
 
 def test_iter_prefix_descriptions_preserves_language_tag():

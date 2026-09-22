@@ -82,11 +82,13 @@ for match in phonenumbers.PhoneNumberMatcher(text, region=None):
 Versions have the form `<libphonenumber version>.<binding revision>`. For
 example, `9.0.34.1` is binding revision 1 over libphonenumber `9.0.34`.
 
-The libphonenumber and fallback Abseil source archives are pinned by SHA-256.
-Both archives are included in the source distribution, allowing it to build
-without network access once the declared Python and system build dependencies
-are installed. Geographic and timezone metadata come from the same pinned
-libphonenumber release.
+The libphonenumber, Python-port metadata, and fallback Abseil source archives
+are pinned by SHA-256. All three archives are included in the source
+distribution, allowing it to build without network access once the declared
+Python and system build dependencies are installed. Core and timezone metadata
+come from the pinned libphonenumber release. Geographic metadata comes from
+the matching pinned `python-phonenumbers` release because its data set has
+broader coverage than the C++ release.
 
 ## Building from source
 

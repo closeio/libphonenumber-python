@@ -15,6 +15,15 @@ SOURCES = (
         ROOT / "vendor" / "libphonenumber-9.0.34.tar.gz",
     ),
     (
+        "python-phonenumbers metadata",
+        (
+            "https://codeload.github.com/daviddrysdale/"
+            "python-phonenumbers/tar.gz/refs/tags/v9.0.34"
+        ),
+        "26b7732644174b9a9baea258f42ad86c2077abd8ed9a6f380d19462d91a3176e",
+        ROOT / "vendor" / "python-phonenumbers-9.0.34.tar.gz",
+    ),
+    (
         "Abseil",
         (
             "https://codeload.github.com/abseil/abseil-cpp/tar.gz/"
