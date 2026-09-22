@@ -107,6 +107,39 @@ file(
   COPY "${python_phonenumbers_metadata_SOURCE_DIR}/resources/geocoding"
   DESTINATION "${libphonenumber_SOURCE_DIR}/resources"
 )
+
+# Preserve the script subtag when the C++ geocoder selects a prefix map.
+# Upstream's public overload currently discards it before calling the already
+# script-aware MappingFileProvider.
+set(
+  LIBPHONENUMBER_GEOCODER_SOURCE
+  "${libphonenumber_SOURCE_DIR}/cpp/src/phonenumbers/geocoding/phonenumber_offline_geocoder.cc"
+)
+file(READ "${LIBPHONENUMBER_GEOCODER_SOURCE}" GEOCODER_SOURCE)
+set(
+  GEOCODER_SCRIPT_IGNORED
+  [=[number, language.getLanguage(), "", language.getCountry());]=]
+)
+set(
+  GEOCODER_SCRIPT_PRESERVED
+  [=[number, language.getLanguage(), language.getScript(), language.getCountry());]=]
+)
+string(FIND "${GEOCODER_SOURCE}" "${GEOCODER_SCRIPT_IGNORED}" PATCH_INDEX)
+if(PATCH_INDEX GREATER_EQUAL 0)
+  string(
+    REPLACE
+    "${GEOCODER_SCRIPT_IGNORED}"
+    "${GEOCODER_SCRIPT_PRESERVED}"
+    GEOCODER_SOURCE
+    "${GEOCODER_SOURCE}"
+  )
+  file(WRITE "${LIBPHONENUMBER_GEOCODER_SOURCE}" "${GEOCODER_SOURCE}")
+else()
+  string(FIND "${GEOCODER_SOURCE}" "${GEOCODER_SCRIPT_PRESERVED}" PATCH_INDEX)
+  if(PATCH_INDEX LESS 0)
+    message(FATAL_ERROR "Unable to apply the geocoder script-subtag patch")
+  endif()
+endif()
 add_subdirectory(
   "${libphonenumber_SOURCE_DIR}/cpp"
   "${libphonenumber_BINARY_DIR}"

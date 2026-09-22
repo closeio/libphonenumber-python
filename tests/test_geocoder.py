@@ -27,6 +27,19 @@ def test_description_for_number(value, language, description):
     )
 
 
+def test_description_for_number_preserves_script():
+    number = phonenumbers.parse("+886223456789")
+
+    assert geocoder.description_for_number(number, "zh") == "台北"
+    assert (
+        geocoder.description_for_number(number, "zh", script="Hant") == "臺北"
+    )
+    assert (
+        geocoder.description_for_valid_number(number, "zh", script="Hant")
+        == "臺北"
+    )
+
+
 @pytest.mark.parametrize(
     ("value", "language", "country"),
     [
