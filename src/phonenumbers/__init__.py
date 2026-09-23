@@ -20,7 +20,7 @@ from .phonenumberutil import (
     region_code_for_number,
 )
 
-__version__ = "9.0.34.1"
+__version__ = "9.0.34.2"
 __libphonenumber_version__ = _native.LIBPHONENUMBER_VERSION
 
 __all__ = [

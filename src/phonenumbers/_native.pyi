@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 LIBPHONENUMBER_VERSION: str
 
@@ -50,3 +50,8 @@ def description_for_number(
     region: str | None,
     assume_valid: bool,
 ) -> str: ...
+def iter_prefix_descriptions(
+    language: str,
+    calling_code: int | None,
+    max_prefix_length: int | None,
+) -> Iterator[tuple[str, str]]: ...
