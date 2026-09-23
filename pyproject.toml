@@ -54,7 +54,6 @@ sdist.exclude = ["build", "dist", "wheelhouse", ".git"]
 sdist.include = [
   "vendor/abseil-cpp-273292d.tar.gz",
   "vendor/libphonenumber-9.0.34.tar.gz",
-  "vendor/python-phonenumbers-9.0.34.tar.gz",
 ]
 wheel.packages = ["src/phonenumbers"]
 

@@ -42,12 +42,12 @@ The `phonenumbers.geocoder` module provides:
 - `country_name_for_number`
 - `iter_prefix_descriptions`
 
-Descriptions are resolved offline using geographic metadata from the pinned
-`python-phonenumbers` release, compiled into the native extension.
-`iter_prefix_descriptions` streams the same compiled prefix metadata without
-materializing the full data set as Python objects. It supports exact language,
-calling-code, and maximum-prefix-length filters. The geocoder is loaded only
-when imported.
+Descriptions are resolved offline using metadata compiled from the pinned
+libphonenumber release, including its removal of legacy prefix entries that the
+pure-Python port may retain. `iter_prefix_descriptions` streams the same
+compiled prefix metadata without materializing the full data set as Python
+objects. It supports exact language, calling-code, and maximum-prefix-length
+filters. The geocoder is loaded only when imported.
 
 ## Timezone lookup
 

@@ -38,30 +38,6 @@ FetchContent_Declare(
   SOURCE_SUBDIR cpp
 )
 
-# The Python port ships a broader geocoding data set than the C++ release.
-# Compile that pinned data into the C++ geocoder so geographic descriptions
-# remain compatible with the pure-Python package.
-set(PYTHON_PHONENUMBERS_VERSION "9.0.34")
-set(
-  PYTHON_PHONENUMBERS_ARCHIVE
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/python-phonenumbers-${PYTHON_PHONENUMBERS_VERSION}.tar.gz"
-)
-if(EXISTS "${PYTHON_PHONENUMBERS_ARCHIVE}")
-  set(PYTHON_PHONENUMBERS_URL "${PYTHON_PHONENUMBERS_ARCHIVE}")
-else()
-  set(
-    PYTHON_PHONENUMBERS_URL
-    "https://codeload.github.com/daviddrysdale/python-phonenumbers/tar.gz/refs/tags/v${PYTHON_PHONENUMBERS_VERSION}"
-  )
-endif()
-FetchContent_Declare(
-  python_phonenumbers_metadata
-  URL "${PYTHON_PHONENUMBERS_URL}"
-  URL_HASH
-    "SHA256=26b7732644174b9a9baea258f42ad86c2077abd8ed9a6f380d19462d91a3176e"
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-
 # libphonenumber falls back to this exact Abseil revision. Declare it first so
 # platforms without a packaged Abseil use a verified local archive.
 set(ABSEIL_COMMIT "273292d1cfc0a94a65082ee350509af1d113344d")
@@ -97,14 +73,9 @@ FetchContent_GetProperties(libphonenumber_upstream)
 if(NOT libphonenumber_upstream_POPULATED)
   FetchContent_Populate(libphonenumber_upstream)
 endif()
-FetchContent_GetProperties(python_phonenumbers_metadata)
-if(NOT python_phonenumbers_metadata_POPULATED)
-  FetchContent_Populate(python_phonenumbers_metadata)
-endif()
 
 # Never modify FetchContent's cached upstream checkout. Recreate a staging tree
-# on every configuration so branch switches and metadata updates cannot reuse
-# stale patched sources or generated geocoding data.
+# on every configuration so branch switches cannot reuse stale patched sources.
 set(
   LIBPHONENUMBER_SOURCE_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/libphonenumber-${LIBPHONENUMBER_VERSION}-patched"
@@ -113,12 +84,6 @@ file(REMOVE_RECURSE "${LIBPHONENUMBER_SOURCE_DIR}")
 file(
   COPY "${libphonenumber_upstream_SOURCE_DIR}/"
   DESTINATION "${LIBPHONENUMBER_SOURCE_DIR}"
-)
-
-file(REMOVE_RECURSE "${LIBPHONENUMBER_SOURCE_DIR}/resources/geocoding")
-file(
-  COPY "${python_phonenumbers_metadata_SOURCE_DIR}/resources/geocoding"
-  DESTINATION "${LIBPHONENUMBER_SOURCE_DIR}/resources"
 )
 
 # Preserve the script subtag when the C++ geocoder selects a prefix map.

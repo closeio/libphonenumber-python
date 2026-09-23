@@ -40,15 +40,12 @@ For a new upstream release:
 
 1. Update the libphonenumber version and SHA-256 in `CMakeLists.txt` and
    `tools/fetch_libphonenumber.py`.
-2. Update the matching `python-phonenumbers` metadata version and SHA-256 in
-   the same files, then compare its geocoding coverage with the generated
-   native data.
-3. Check whether libphonenumber changed its Abseil revision and update its
+2. Check whether libphonenumber changed its Abseil revision and update its
    commit and SHA-256 if needed.
-4. Replace `src/phonenumbers/_data/timezones.txt` with the matching upstream
+3. Replace `src/phonenumbers/_data/timezones.txt` with the matching upstream
    `resources/timezones/map_data.txt`.
-5. Update the source archives listed in `pyproject.toml`.
-6. Set the package version to `<upstream version>.1` and review metadata
+4. Update the source archives listed in `pyproject.toml`.
+5. Set the package version to `<upstream version>.1` and review metadata
    changes with focused tests.
 
 By submitting a contribution, you agree that it is licensed under the Apache
