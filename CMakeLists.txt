@@ -30,7 +30,7 @@ else()
   )
 endif()
 FetchContent_Declare(
-  libphonenumber_upstream
+  libphonenumber
   URL "${LIBPHONENUMBER_URL}"
   URL_HASH
     "SHA256=5d2a61572110f0538fdb1afbc1f8381426fbfbbf544b45e8ae905297f2f5befa"
@@ -69,55 +69,13 @@ set(REGENERATE_METADATA OFF CACHE BOOL "" FORCE)
 set(USE_BOOST OFF CACHE BOOL "" FORCE)
 set(USE_ICU_REGEXP ON CACHE BOOL "" FORCE)
 set(USE_STDMUTEX ON CACHE BOOL "" FORCE)
-FetchContent_GetProperties(libphonenumber_upstream)
-if(NOT libphonenumber_upstream_POPULATED)
-  FetchContent_Populate(libphonenumber_upstream)
+FetchContent_GetProperties(libphonenumber)
+if(NOT libphonenumber_POPULATED)
+  FetchContent_Populate(libphonenumber)
 endif()
-
-# Never modify FetchContent's cached upstream checkout. Recreate a staging tree
-# on every configuration so branch switches cannot reuse stale patched sources.
-set(
-  LIBPHONENUMBER_SOURCE_DIR
-  "${CMAKE_CURRENT_BINARY_DIR}/libphonenumber-${LIBPHONENUMBER_VERSION}-patched"
-)
-file(REMOVE_RECURSE "${LIBPHONENUMBER_SOURCE_DIR}")
-file(
-  COPY "${libphonenumber_upstream_SOURCE_DIR}/"
-  DESTINATION "${LIBPHONENUMBER_SOURCE_DIR}"
-)
-
-# Preserve the script subtag when the C++ geocoder selects a prefix map.
-# Upstream's public overload currently discards it before calling the already
-# script-aware MappingFileProvider.
-set(
-  LIBPHONENUMBER_GEOCODER_SOURCE
-  "${LIBPHONENUMBER_SOURCE_DIR}/cpp/src/phonenumbers/geocoding/phonenumber_offline_geocoder.cc"
-)
-file(READ "${LIBPHONENUMBER_GEOCODER_SOURCE}" GEOCODER_SOURCE)
-set(
-  GEOCODER_SCRIPT_IGNORED
-  [=[number, language.getLanguage(), "", language.getCountry());]=]
-)
-set(
-  GEOCODER_SCRIPT_PRESERVED
-  [=[number, language.getLanguage(), language.getScript(), language.getCountry());]=]
-)
-string(FIND "${GEOCODER_SOURCE}" "${GEOCODER_SCRIPT_IGNORED}" PATCH_INDEX)
-if(PATCH_INDEX LESS 0)
-  message(FATAL_ERROR "Unable to apply the geocoder script-subtag patch")
-endif()
-string(
-  REPLACE
-  "${GEOCODER_SCRIPT_IGNORED}"
-  "${GEOCODER_SCRIPT_PRESERVED}"
-  GEOCODER_SOURCE
-  "${GEOCODER_SOURCE}"
-)
-file(WRITE "${LIBPHONENUMBER_GEOCODER_SOURCE}" "${GEOCODER_SOURCE}")
-
 add_subdirectory(
-  "${LIBPHONENUMBER_SOURCE_DIR}/cpp"
-  "${libphonenumber_upstream_BINARY_DIR}"
+  "${libphonenumber_SOURCE_DIR}/cpp"
+  "${libphonenumber_BINARY_DIR}"
   EXCLUDE_FROM_ALL
 )
 # Xcode 17 diagnoses deprecated constructs in pinned upstream dependencies.
@@ -142,7 +100,7 @@ target_compile_options(
 pybind11_add_module(_native MODULE src/native.cpp)
 target_include_directories(
   _native PRIVATE
-  "${LIBPHONENUMBER_SOURCE_DIR}/cpp/src"
+  "${libphonenumber_SOURCE_DIR}/cpp/src"
   "${ICU_INCLUDE_DIRS}"
 )
 target_compile_definitions(
